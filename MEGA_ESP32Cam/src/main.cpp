@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <string.h>
 #include <Wire.h>
+#include <Servo.h> 
 
 #include "I2Cdev.h"  
 #include "MPU6050_6Axis_MotionApps20.h"
@@ -10,6 +11,7 @@
 #endif
 
 MPU6050 mpu;
+Servo myServo; // 創建舵機對象來控制電調
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
@@ -63,6 +65,10 @@ String command;
 void setup() {  
   Serial.begin(115200);
   Serial2.begin(38400);
+
+  myServo.attach(9);
+  myServo.writeMicroseconds(1475);  //推進器停止  (後退)1000--1475--2000(前進)
+
   Wire.begin(2);
   Wire.setClock(400000);
     while (!Serial); // wait for Leonardo enumeration, others continue immediately
@@ -125,6 +131,10 @@ void setup() {
 }
 
 int stableStart = 0;
+int speed = 1475;
+int control = 0;
+int speednum = 0;
+int interval;
 
 void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     command = "";
@@ -135,32 +145,116 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     //delay(10);
     //command.trim();   //修剪字串頭尾 
   
-    if (command.length() > 0)
+    if (command.length() > 0)   // 接收命令
     {      
       if(!checkStringIsNumerical(command))
       {
-        if (command == "h")
+        if (command == "f")  // forward
         {
-          Serial.println("收到h命令");
+          Serial.print("收到f命令");
+          //myServo.writeMicroseconds(1600);
+          control = 1;
           stableStart = 0;
         }
-        if (command == "s")
+        if (command == "l")  // left
+        {
+          Serial.print("收到l命令");
+          stableStart = 0;
+        }
+        if (command == "r")  // right
+        {
+          Serial.print("收到r命令");
+          stableStart = 0;
+        }
+        if (command == "b")  // backward
+        {
+          Serial.print("收到b命令");
+          control = 2;
+          stableStart = 0;
+        }
+        if (command == "t")  // stop
+        {
+          Serial.print("收到t命令");
+          control = 3;
+          stableStart = 0;
+        }
+        if (command == "s")  // stable
         {
           Serial.print("收到s命令");
           stableStart = 1;
         }
-        if (command == "a")
+        if (command == "h")  // hand
         {
-          Serial.print("收到a命令");
+          Serial.println("收到h命令");
           stableStart = 0;
         }
-        if (command == "f")
+        if (command == "a")  // arm
         {
-          Serial.print("收到f命令");
+          Serial.println("收到a命令");
+          stableStart = 0;
+        }
+        if (command == "d")  // dive
+        {
+          Serial.print("收到d命令");
+          stableStart = 0;
+        }
+        if (command == "e")  // rise
+        {
+          Serial.println("收到e命令");
           stableStart = 0;
         }
       }
     }
+
+    switch (control)
+    {
+      case 0:
+        speednum = 0;
+        speed = speed;
+        break;
+    
+      case 1:
+        speednum++;
+        speed++;
+        if(speednum >= 100) 
+        {
+          speednum = 0;
+          control = 0;
+        }
+        break;
+    
+      case 2:
+        speednum++;
+        speed--;
+        if(speednum >= 100) 
+        {
+          speednum = 0;
+          control = 0;
+        }
+        break;
+      case 3:
+        speednum = 0;
+        speednum++;
+        if(speed > 1475)
+        {
+          interval = speed - 1475;
+          speed--;
+        }
+        if(speed < 1475)
+        {
+          interval = 1475 - speed;
+          speed++;
+        }
+        if(speednum >= interval) 
+        {
+          speednum = 0;
+          control = 0;
+        }
+        break;
+    }
+
+    myServo.writeMicroseconds(speed);
+    delay(10);
 
     //if programming failed, don't try to do anything
     if (!dmpReady) return;
@@ -184,6 +278,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           if((ypr[1] * 180/M_PI)>30 || (ypr[1] * 180/M_PI)<-30)
           {
             Serial.println("馬達轉動!");
+            speed = speed;
           }
           if((ypr[2] * 180/M_PI)>30 || (ypr[2] * 180/M_PI)<-30)
           {
