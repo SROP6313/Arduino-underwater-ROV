@@ -63,54 +63,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         max-width: 100% ;
         height: 320px ;  
       }
-      .btn-group .button {
-        background-color: #669999;
-        border: 1px solid white;
-        color: white;
-        padding: 15px 30px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        cursor: pointer;
-        float: left;
-        width: 33.3%;
-        transition-duration: 0.4s;
-      }
-      .btn-group2 .button2 {
-        background-color: #7c9ccd;
-        border: 1px solid white;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        cursor: pointer;
-        float: left;
-        transition-duration: 0.4s;
-        width: 50%;
-      }
-      .btn-group3 .button3 {
-        background-color: #d4aa5c;
-        border: 1px solid white;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        cursor: pointer;
-        float: left;
-        transition-duration: 0.4s;
-        width: 50%;
-      }
-      .button2:hover {
-        background-color: white;
-        color:#669999;
-      }
-
-      .btn-group1 .button1 {
+     .btn-group1 .buttonFrwBkw {
         background-color: #669999;
         border: 1px solid white;
         color: white;
@@ -124,9 +77,74 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         transition-duration: 0.4s;
         width: 100%;
       }      
-      .button3:hover {
-        background-color: white;
-        color:#669999;
+      .btn-group3 .buttonRL {
+        background-color: #669999;
+        border: 1px solid white;
+        color: white;
+        padding: 15px 30px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        width: 33.3%;
+        transition-duration: 0.4s;
+      }
+      .btn-group3 .buttonStp {
+        background-color: LightSlateGrey;
+        border: 1px solid white;
+        color: white;
+        padding: 15px 30px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        width: 33.3%;
+        transition-duration: 0.4s;
+      }
+      .btn-group2 .buttonRsDv {
+        background-color: #7c9ccd;
+        border: 1px solid white;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        transition-duration: 0.4s;
+        width: 50%;
+      }
+      .btn-group2 .buttonHdAm {
+        background-color: #d4aa5c;
+        border: 1px solid white;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        transition-duration: 0.4s;
+        width: 50%;
+      }
+      .buttonStb {
+        display: inline-block;
+        background-color: DarkSalmon;
+        border: none;
+        color: #FFFFFF;
+        text-align: center;
+        font-size: 16px;
+        padding: 10px;
+        width: 100%;
+        transition: all 0.5s;
+        cursor: pointer;
+        margin: 10px 0 0 0;
       }
       .card{
         max-width: auto;
@@ -139,70 +157,64 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         color: #FFF;
         box-shadow: 0px 2px 18px -4px rgba(0,0,0,0.75);
       }
-      .button4 {
-        display: inline-block;
-        background-color: #778899;
-        border: none;
-        color: #FFFFFF;
-        text-align: center;
-        font-size: 16px;
-        padding: 10px;
-        width: 100%;
-        transition: all 0.5s;
-        cursor: pointer;
-        margin: 10px 0 0 0;
-      }
-
-      .button4 span {
-        cursor: pointer;
-        display: inline-block;
-        position: relative;
-        transition: 0.5s;
-      }
-      .button4 span:after {
-        content: '\00bb';
-        position: absolute;
-        opacity: 0;
+      ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0 25px;
+        overflow: hidden;
+        background-color: #333;
+        position: -webkit-sticky; 
+        position: sticky;
         top: 0;
-        right: -10px;
-        transition: 0.5s;
       }
-      .button4:hover span {
-        padding-right: 15px;
+      li {
+        float: left;
       }
-      .button4:hover span:after {
-        opacity: 1;
-        right: 0;
+      li a {
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
       }
     </style>
-    <h1 style="color:steelblue">水下機</h1>
-    <h3>ROV underwater view</h3>
+    <h1 style="color:steelblue">水下觀察機</h1>
+    <h3 id="clock"></h3>
+    <ul>
+      <li><a href="#photo">水下影像</a></li>
+      <li><a href="#control">控制</a></li>
+      <li><a href="#feedback">數值</a></li>
+    </ul>
     <img src="" id="photo" alt="no signal"  style="transform:rotate(90deg);">
     <div class="btn-group1">
-      <button class="button1 button3" onclick="toggleCheckbox('forward');">Forward</button>
-    </div>
-    <div class="btn-group">
-      <button class="button button2" onmousedown="toggleCheckbox('left');" ontouchstart="toggleCheckbox('left');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">Left</button>
-      <button class="button button2" onmousedown="toggleCheckbox('stop');" ontouchstart="toggleCheckbox('stop');">Stop</button>
-      <button class="button button2" onmousedown="toggleCheckbox('right');" ontouchstart="toggleCheckbox('right');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">Right</button>
-    </div>
-    <div class="btn-group1">
-      <button class="button1 button3" onmousedown="toggleCheckbox('backward');" ontouchstart="toggleCheckbox('backward');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">Backward</button>
-    </div>
-    <div class="btn-group2">
-      <button class="button button2" onmousedown="toggleCheckbox('rise');" ontouchstart="toggleCheckbox('rise');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">rise</button>
-      <button class="button button2" onmousedown="toggleCheckbox('dive');" ontouchstart="toggleCheckbox('dive');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">dive</button>
+      <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
     </div>
     <div class="btn-group3">
-        <button class="button button3" onclick="toggleCheckbox('hand');">hand</button>
-        <button class="button button3" onclick="toggleCheckbox('arm');">arm</button>
-      </div>
-    <button class="button4" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>stable</span></button>
+      <button class="buttonRL" onclick="toggleCheckbox('left');">Left</button>
+    </div>
+    <div class="btn-group3">
+      <button class="buttonStp" onclick="toggleCheckbox('stop');">Stop</button>
+    </div>
+    <div class="btn-group3">
+      <button class="buttonRL" onclick="toggleCheckbox('right');">Right</button>
+    </div>
+    <div class="btn-group1">
+      <button class="buttonFrwBkw" onclick="toggleCheckbox('backward');">減速</button>
+    </div>
+       <div class="btn-group2">
+      <button class="buttonRsDv" onclick="toggleCheckbox('rise');">rise</button>
+      <button class="buttonRsDv" onclick="toggleCheckbox('dive');">dive</button>
+    </div>
+    <div class="btn-group2">
+      <button class="buttonHdAm" onclick="toggleCheckbox('hand');">hand</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('arm');">arm</button>
+    </div>
+    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>stable</span></button>
     <p style="clear:both"><br></p>
     <div class="card">
-    <h2>Feedback Data</h2><br>
-    <h4>Temperature : <span id="ADCValue">0</span> (degree C) </h4><br>
-    <h4>Pressure : <span id="pressureValue">0</span> (Pa) </h4><br>
+      <h2 id="feedback">Feedback Data</h2><br>
+      <h4>Temperature : <span id="ADCValue">0</span> (degree C) </h4><br>
+      <h4>Pressure : <span id="pressureValue">0</span> (Pa) </h4><br>
     </div>
    <script>
    function toggleCheckbox(x) {
@@ -246,6 +258,32 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       rssihttp.send();
     }
 
+    function Clock() {
+      var date = new Date();
+      this.year = date.getFullYear();
+      this.month = date.getMonth() + 1;
+      this.date = date.getDate();
+      this.day = new Array("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")[date.getDay()];
+      this.hour = date.getHours() 
+      this.minute = date.getMinutes() 
+      this.second = date.getSeconds() 
+      this.toString = function() {
+      return this.year + "年" + this.month + "月" + this.date + "日 " + this.hour + ":" + this.minute + ":" + this.second + " " + this.day;
+      };
+      this.toSimpleDate = function() {
+      return this.year + "-" + this.month + "-" + this.date;
+      };
+      this.toDetailDate = function() {
+      return this.year + "-" + this.month + "-" + this.date + " " + this.hour + ":" + this.minute + ":" + this.second;
+      };
+      this.display = function(ele) {
+      var clock = new Clock();
+      ele.innerHTML = clock.toString();
+      window.setTimeout(function() {clock.display(ele);}, 1000);
+      };
+    }
+    var clock = new Clock();
+    clock.display(document.getElementById("clock"));
     </script>
   </body> 
 </html>
@@ -354,16 +392,16 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     Serial.println("f");
   }
   else if(!strcmp(variable, "left")) {
-    
+    Serial.println("l");
   }
   else if(!strcmp(variable, "right")) {
-    
+    Serial.println("r");
   }
   else if(!strcmp(variable, "backward")) {
-    
+    Serial.println("b");
   }
   else if(!strcmp(variable, "stop")) {
-    Serial.println("");
+    Serial.println("t");
   }
   else if(!strcmp(variable, "stable")) {
     Serial.println("s");
@@ -373,6 +411,12 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   }
   else if(!strcmp(variable, "arm")) {
     Serial.println("a");
+  }
+  else if(!strcmp(variable, "dive")) {
+    Serial.println("d");
+  }
+  else if(!strcmp(variable, "rise")) {
+    Serial.println("e");
   }
   else {
     res = -1;
@@ -530,7 +574,7 @@ void loop(){
   //Serial.print("WiFi RSSI:");
   //Serial.println(WiFi.RSSI()); //讀取WiFi強度
 
-  if(WiFi.RSSI()<(-60))     //RSSI小於-60跳警告
+  if(WiFi.RSSI()<(-200))     //RSSI小於-60跳警告
   {
     if(WIFIreminder == 0) 
     {
