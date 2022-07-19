@@ -15,8 +15,11 @@ Servo myServo; // 創建舵機對象來控制電調
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
-#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+
+#define dirPin 2
+#define stepPin 3
+
 bool blinkState = false;
 
 // MPU control/status vars
@@ -69,9 +72,12 @@ void setup() {
   myServo.attach(9);
   myServo.writeMicroseconds(1475);  //推進器停止  (後退)1000--1475--2000(前進)
 
+  pinMode(dirPin,OUTPUT);   // 步進馬達腳位
+  pinMode(stepPin,OUTPUT);
+
   Wire.begin(2);
   Wire.setClock(400000);
-    while (!Serial); // wait for Leonardo enumeration, others continue immediately
+    //while (!Serial); // wait for Leonardo enumeration, others continue immediately
 
   Serial.println(F("Initializing I2C devices..."));
   mpu.initialize();
@@ -104,14 +110,14 @@ void setup() {
     mpu.setDMPEnabled(true);
 
     // enable Arduino interrupt detection
-    Serial.print(F("Enabling interrupt detection (Arduino external interrupt "));
-    Serial.print(digitalPinToInterrupt(INTERRUPT_PIN));
-    Serial.println(F(")..."));
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
+    // Serial.print(F("Enabling interrupt detection (Arduino external interrupt "));
+    // Serial.print(digitalPinToInterrupt(INTERRUPT_PIN));
+    // Serial.println(F(")..."));
+    // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
     mpuIntStatus = mpu.getIntStatus();
 
     // set our DMP Ready flag so the main loop() function knows it's okay to use it
-    Serial.println(F("DMP ready! Waiting for first interrupt..."));
+    // Serial.println(F("DMP ready! Waiting for first interrupt..."));
     dmpReady = true;
 
     // get expected DMP packet size for later comparison
@@ -135,6 +141,7 @@ int speed = 1475;
 int control = 0;
 int speednum = 0;
 int interval;
+int steppernum = 0;
 
 void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     command = "";
@@ -145,7 +152,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     //delay(10);
     //command.trim();   //修剪字串頭尾 
   
-    if (command.length() > 0)   // 接收命令
+    if (command.length() > 0)   // 接收命令 (此區只執行一次)
     {      
       if(!checkStringIsNumerical(command))
       {
@@ -159,23 +166,25 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "l")  // left
         {
           Serial.print("收到l命令");
+          control = 2;
           stableStart = 0;
         }
         if (command == "r")  // right
         {
           Serial.print("收到r命令");
+          control = 3;
           stableStart = 0;
         }
         if (command == "b")  // backward
         {
           Serial.print("收到b命令");
-          control = 2;
+          control = 4;
           stableStart = 0;
         }
         if (command == "t")  // stop
         {
           Serial.print("收到t命令");
-          control = 3;
+          control = 5;
           stableStart = 0;
         }
         if (command == "s")  // stable
@@ -186,7 +195,27 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "h")  // hand
         {
           Serial.println("收到h命令");
-          stableStart = 0;
+          //stableStart = 0;
+          steppernum++;
+          if(steppernum <= 5)   // 前 5次為正轉
+          {
+            digitalWrite(dirPin,HIGH);  // 正轉
+          }
+          else if(steppernum >= 10)
+          {
+            steppernum = 0;
+          }
+          else                  // 後 5次為反轉
+          {
+            digitalWrite(dirPin,LOW);  // 反轉
+          }
+          for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+          {
+            digitalWrite(stepPin,HIGH);
+            delayMicroseconds(1000);
+            digitalWrite(stepPin,LOW);
+            delayMicroseconds(1000);
+          }                    
         }
         if (command == "a")  // arm
         {
@@ -196,11 +225,13 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "d")  // dive
         {
           Serial.print("收到d命令");
+          control = 8;
           stableStart = 0;
         }
         if (command == "e")  // rise
         {
           Serial.println("收到e命令");
+          control = 9;
           stableStart = 0;
         }
       }
@@ -223,7 +254,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         }
         break;
     
-      case 2:
+      case 4:
         speednum++;
         speed--;
         if(speednum >= 100) 
@@ -232,7 +263,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           control = 0;
         }
         break;
-      case 3:
+      case 5:
         speednum = 0;
         speednum++;
         if(speed > 1475)
@@ -254,7 +285,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     }
 
     myServo.writeMicroseconds(speed);
-    delay(10);
+    delay(50);        // 1s = 1000ms = 1000,000 Microseconds
 
     //if programming failed, don't try to do anything
     if (!dmpReady) return;
@@ -278,7 +309,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           if((ypr[1] * 180/M_PI)>30 || (ypr[1] * 180/M_PI)<-30)
           {
             Serial.println("馬達轉動!");
-            speed = speed;
+            speed--;
           }
           if((ypr[2] * 180/M_PI)>30 || (ypr[2] * 180/M_PI)<-30)
           {
