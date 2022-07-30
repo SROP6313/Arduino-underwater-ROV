@@ -11,16 +11,14 @@
 #endif
 
 MPU6050 mpu;
-Servo myServo; // 創建舵機對象來控制電調
+Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵機對象來控制電調
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
-#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
-
-#define dirPin 2
-#define stepPin 3
-
-bool blinkState = false;
+#define dirPin1 2
+#define stepPin1 3
+#define dirPin2 4
+#define stepPin2 5
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -69,11 +67,23 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(38400);
 
-  myServo.attach(9);
-  myServo.writeMicroseconds(1475);  //推進器停止  (後退)1000--1475--2000(前進)
+  myServo1.attach(6);
+  myServo2.attach(7);
+  myServo3.attach(8);
+  myServo4.attach(9);
+  myServo5.attach(10);
+  myServo6.attach(11);
+  myServo1.writeMicroseconds(1475);  //推進器停止  (後退)1000--1475--2000(前進)
+  myServo2.writeMicroseconds(1475);
+  myServo3.writeMicroseconds(1475);
+  myServo4.writeMicroseconds(1475);
+  myServo5.writeMicroseconds(1475);
+  myServo6.writeMicroseconds(1475);
 
-  pinMode(dirPin,OUTPUT);   // 步進馬達腳位
-  pinMode(stepPin,OUTPUT);
+  pinMode(dirPin1,OUTPUT);   // 步進馬達腳位
+  pinMode(stepPin1,OUTPUT);
+  pinMode(dirPin2,OUTPUT);   // 步進馬達腳位
+  pinMode(stepPin2,OUTPUT);
 
   Wire.begin(2);
   Wire.setClock(400000);
@@ -132,15 +142,16 @@ void setup() {
     Serial.print(devStatus);
     Serial.println(F(")"));
   }
-  pinMode(LED_PIN, OUTPUT);
   temperature = 0;
 }
 
 int stableStart = 0;
-int speed = 1475;
+int speed1, speed2, speed3, speed4, speed5, speed6 = 1475;
+int originSpeed1, originSpeed2;
 int control = 0;
 int speednum = 0;
-int interval;
+//int interval;
+//int spdifference1, spdifference2, spdifference3, spdifference4, spdifference5, spdifference6; 
 int steppernum = 0;
 
 void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
@@ -162,30 +173,51 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           //myServo.writeMicroseconds(1600);
           control = 1;
           stableStart = 0;
+          speednum = 0;
         }
         if (command == "l")  // left
         {
           Serial.print("收到l命令");
           control = 2;
+          originSpeed2 = speed2;
           stableStart = 0;
+          speednum = 0;
         }
         if (command == "r")  // right
         {
           Serial.print("收到r命令");
           control = 3;
+          originSpeed1 = speed1;
           stableStart = 0;
+          speednum = 0;
         }
         if (command == "b")  // backward
         {
           Serial.print("收到b命令");
           control = 4;
           stableStart = 0;
+          speednum = 0;
         }
         if (command == "t")  // stop
         {
           Serial.print("收到t命令");
           control = 5;
           stableStart = 0;
+          speednum = 0;
+          // spdifference1 = speed1 - 1475;
+          // spdifference2 = speed2 - 1475;
+          // spdifference3 = speed3 - 1475;
+          // spdifference4 = speed4 - 1475;
+          // spdifference5 = speed5 - 1475;
+          // spdifference6 = speed6 - 1475;
+          // int diffArray[6] = {abs(spdifference1), abs(spdifference2), abs(spdifference3), abs(spdifference4), abs(spdifference5), abs(spdifference6)};
+          // int maxVal = diffArray[0];
+
+          // for(int i=0; i<6; i++)     //找出最大值
+          // {
+          //   maxVal = max(diffArray[i], maxVal);
+          // }
+          // interval = maxVal;          
         }
         if (command == "s")  // stable
         {
@@ -195,44 +227,71 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "h")  // hand
         {
           Serial.println("收到h命令");
-          //stableStart = 0;
-          steppernum++;
-          if(steppernum <= 5)   // 前 5次為正轉
+          //stableStart = 0;          
+          if(steppernum == 0)
           {
-            digitalWrite(dirPin,HIGH);  // 正轉
+            digitalWrite(dirPin1,HIGH);
+            for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+            {
+              digitalWrite(stepPin1,HIGH);
+              delayMicroseconds(1000);
+              digitalWrite(stepPin1,LOW);
+              delayMicroseconds(1000);
+            }
+            steppernum = 1;
           }
-          else if(steppernum >= 10)
+          else
           {
+            digitalWrite(1,LOW);
+            for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+            {
+              digitalWrite(stepPin1,HIGH);
+              delayMicroseconds(1000);
+              digitalWrite(stepPin1,LOW);
+              delayMicroseconds(1000);
+            }
             steppernum = 0;
-          }
-          else                  // 後 5次為反轉
-          {
-            digitalWrite(dirPin,LOW);  // 反轉
-          }
-          for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
-          {
-            digitalWrite(stepPin,HIGH);
-            delayMicroseconds(1000);
-            digitalWrite(stepPin,LOW);
-            delayMicroseconds(1000);
-          }                    
+          }                 
         }
-        if (command == "a")  // arm
+        if (command == "a")  // armup
         {
           Serial.println("收到a命令");
           stableStart = 0;
+          digitalWrite(dirPin1,HIGH);
+          for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+          {
+            digitalWrite(stepPin1,HIGH);
+            delayMicroseconds(1000);
+            digitalWrite(stepPin1,LOW);
+            delayMicroseconds(1000);
+          }
+        }
+        if (command == "q")  // armdown
+        {
+          Serial.println("收到q命令");
+          stableStart = 0;
+          digitalWrite(dirPin1,LOW);
+          for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+          {
+            digitalWrite(stepPin1,HIGH);
+            delayMicroseconds(1000);
+            digitalWrite(stepPin1,LOW);
+            delayMicroseconds(1000);
+          }
         }
         if (command == "d")  // dive
         {
           Serial.print("收到d命令");
-          control = 8;
+          control = 6;
           stableStart = 0;
+          speednum = 0;
         }
         if (command == "e")  // rise
         {
           Serial.println("收到e命令");
-          control = 9;
+          control = 7;
           stableStart = 0;
+          speednum = 0;
         }
       }
     }
@@ -241,42 +300,109 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     {
       case 0:
         speednum = 0;
-        speed = speed;
+        speed1 = speed1;
+        speed2 = speed2;
         break;
     
-      case 1:
+      case 1:      //前進
         speednum++;
-        speed++;
+        speed1++;
+        speed2++;
         if(speednum >= 100) 
         {
           speednum = 0;
           control = 0;
         }
         break;
-    
-      case 4:
+
+      case 2:      //左轉
         speednum++;
-        speed--;
+        if(speednum < 100)
+        {
+          speed2--;
+        }        
+        else
+        {
+          speed2++;
+          if(speed2 >= originSpeed2)
+          {
+            speed2 = originSpeed2;
+            speednum = 0;
+            control = 0;
+          }
+        }
+        break;
+    
+      case 3:      //右轉
+        speednum++;
+        if(speednum < 100)
+        {
+          speed1--;
+        }        
+        else
+        {
+          speed1++;
+          if(speed1 >= originSpeed1)
+          {
+            speed1 = originSpeed1;
+            speednum = 0;
+            control = 0;
+          }
+        }
+        break;
+      
+      case 4:      //後退
+        speednum++;
+        speed1--;
+        speed2--;
         if(speednum >= 100) 
         {
           speednum = 0;
           control = 0;
         }
         break;
-      case 5:
+      case 5:      //停止
         speednum = 0;
+        
+        if(speed1 > 1475) speed1--;
+        if(speed1 < 1475) speed1++;
+        if(speed2 > 1475) speed2--;
+        if(speed2 < 1475) speed2++;
+        if(speed3 > 1475) speed3--;
+        if(speed3 < 1475) speed3++;
+        if(speed4 > 1475) speed4--;
+        if(speed4 < 1475) speed4++;
+        if(speed5 > 1475) speed5--;
+        if(speed5 < 1475) speed5++;
+        if(speed6 > 1475) speed6--;
+        if(speed6 < 1475) speed6++;
+
+        if(speed1==1475 && speed2==1475 && speed3==1475 && speed4==1475 && speed5==1475 && speed6==1475) 
+        {          
+          control = 0;
+        }
+        break;
+
+      case 6:      //下潛
         speednum++;
-        if(speed > 1475)
+        speed3++;
+        speed4++;
+        speed5++;
+        speed6++;
+        if(speednum >= 100) 
         {
-          interval = speed - 1475;
-          speed--;
+          speednum = 0;
+          control = 0;
         }
-        if(speed < 1475)
-        {
-          interval = 1475 - speed;
-          speed++;
-        }
-        if(speednum >= interval) 
+        break;
+
+      case 7:      //上升
+        speednum++;
+        speed3--;
+        speed4--;
+        speed5--;
+        speed6--;
+        if(speednum >= 100) 
         {
           speednum = 0;
           control = 0;
@@ -284,7 +410,12 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         break;
     }
 
-    myServo.writeMicroseconds(speed);
+    myServo1.writeMicroseconds(speed1);
+    myServo2.writeMicroseconds(speed2);
+    myServo3.writeMicroseconds(speed3);
+    myServo4.writeMicroseconds(speed4);
+    myServo5.writeMicroseconds(speed5);
+    myServo6.writeMicroseconds(speed6);
     delay(50);        // 1s = 1000ms = 1000,000 Microseconds
 
     //if programming failed, don't try to do anything
@@ -309,18 +440,12 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           if((ypr[1] * 180/M_PI)>30 || (ypr[1] * 180/M_PI)<-30)
           {
             Serial.println("馬達轉動!");
-            speed--;
           }
           if((ypr[2] * 180/M_PI)>30 || (ypr[2] * 180/M_PI)<-30)
           {
             Serial.println("馬達轉動!");
           }
         }
-      #endif
-
-      // blink LED to indicate activity
-      blinkState = !blinkState;
-      digitalWrite(LED_PIN, blinkState);
-    
+      #endif    
     }
 }
