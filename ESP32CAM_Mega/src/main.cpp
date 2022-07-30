@@ -123,7 +123,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         background-color: #d4aa5c;
         border: 1px solid white;
         color: white;
-        padding: 15px 32px;
+        padding: 15px 15px;
         text-align: center;
         text-decoration: none;
         display: inline-block;
@@ -131,7 +131,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         cursor: pointer;
         float: left;
         transition-duration: 0.4s;
-        width: 50%;
+        width: 33.333%;
       }
       .buttonStb {
         display: inline-block;
@@ -187,32 +187,33 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     </ul>
     <img src="" id="photo" alt="no signal"  style="transform:rotate(90deg);">
     <div class="btn-group1">
-      <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
+      <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward'); disableClicksFor3s();">加速</button>
     </div>
     <div class="btn-group3">
-      <button class="buttonRL" onclick="toggleCheckbox('left');">Left</button>
+      <button class="buttonRL" onclick="toggleCheckbox('left'); disableClicksFor3s();">左轉</button>
     </div>
     <div class="btn-group3">
-      <button class="buttonStp" onclick="toggleCheckbox('stop');">Stop</button>
+      <button class="buttonStp" onclick="toggleCheckbox('stop'); disableClicksFor3s();">Stop</button>
     </div>
     <div class="btn-group3">
-      <button class="buttonRL" onclick="toggleCheckbox('right');">Right</button>
+      <button class="buttonRL" onclick="toggleCheckbox('right'); disableClicksFor3s();">右轉</button>
     </div>
     <div class="btn-group1">
-      <button class="buttonFrwBkw" onclick="toggleCheckbox('backward');">減速</button>
+      <button class="buttonFrwBkw" onclick="toggleCheckbox('backward'); disableClicksFor3s();">減速</button>
     </div>
        <div class="btn-group2">
-      <button class="buttonRsDv" onclick="toggleCheckbox('rise');">rise</button>
-      <button class="buttonRsDv" onclick="toggleCheckbox('dive');">dive</button>
+      <button class="buttonRsDv" onclick="toggleCheckbox('rise'); disableClicksFor3s();">上升</button>
+      <button class="buttonRsDv" onclick="toggleCheckbox('dive'); disableClicksFor3s();">下潛</button>
     </div>
     <div class="btn-group2">
-      <button class="buttonHdAm" onclick="toggleCheckbox('hand');">hand</button>
-      <button class="buttonHdAm" onclick="toggleCheckbox('arm');">arm</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('hand'); disableClicksFor3s();">夾爪</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('armup'); disableClicksFor3s();">手臂抬升</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('armdown'); disableClicksFor3s();">手臂下降</button>
     </div>
-    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>stable</span></button>
+    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable'); disableClicksFor3s();"><span>穩定機身</span></button>
     <p style="clear:both"><br></p>
     <div class="card">
-      <h2 id="feedback">Feedback Data</h2><br>
+      <h2 id="feedback">感測器數值</h2><br>
       <h4>Temperature : <span id="ADCValue">0</span> (degree C) </h4><br>
       <h4>Pressure : <span id="pressureValue">0</span> (Pa) </h4><br>
     </div>
@@ -227,7 +228,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
    setInterval(function() {
   // Call a function repetatively with 2 Second interval
     getTemper();
-    getRSSI();
+    getWarn();
   }, 500); //500ms update rate
     
     var wifi;
@@ -242,23 +243,27 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       xhttp.send();
     }
     
-    function getRSSI() {
-      var rssihttp = new XMLHttpRequest();
-      rssihttp.onreadystatechange = function() {
-        if (rssihttp.readyState == 4 && rssihttp.status == 200) {
-          wifi = parseInt(rssihttp.responseText);
-          console.log(wifi);  //主控台顯示wifi值
-          if(wifi == 1)
+    function getWarn() {
+      var warnhttp = new XMLHttpRequest();
+      warnhttp.onreadystatechange = function() {
+        if (warnhttp.readyState == 4 && warnhttp.status == 200) {
+          warn = parseInt(warnhttp.responseText);
+          console.log(warn);  //主控台顯示warn值
+          if(warn == 1)
           {
             alert("警告!訊號過低");
           }
+          if(warn == 3)
+          {
+            alert("警告!電池電壓過低");
+          }
         }
       };
-      rssihttp.open("GET", "readRSSI", true);
-      rssihttp.send();
+      warnhttp.open("GET", "readWarn", true);
+      warnhttp.send();
     }
 
-    function Clock() {
+    function Clock() {      //顯示時間的函數
       var date = new Date();
       this.year = date.getFullYear();
       this.month = date.getMonth() + 1;
@@ -284,6 +289,24 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
     var clock = new Clock();
     clock.display(document.getElementById("clock"));
+    
+    let freezeClic = false; // just modify that variable to disable all clics events
+
+    document.addEventListener("click", freezeClicFn, true);
+
+    function freezeClicFn(e) {
+      if (freezeClic) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }
+    
+    function disableClicksFor3s() {
+      freezeClic = true;
+      setTimeout(() => {
+        freezeClic = false;
+      }, 3000);
+    }
     </script>
   </body> 
 </html>
@@ -409,8 +432,11 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   else if(!strcmp(variable, "hand")) {
     Serial.println("h");
   }
-  else if(!strcmp(variable, "arm")) {
+  else if(!strcmp(variable, "armup")) {
     Serial.println("a");
+  }
+  else if(!strcmp(variable, "armdown")) {
+    Serial.println("q");
   }
   else if(!strcmp(variable, "dive")) {
     Serial.println("d");
@@ -479,9 +505,9 @@ void handleADC() {
 }
 
 String w;
-void handleRSSI(){
-  String RSSI = w;
-  server.send(200, "text/plane", RSSI); //Send RSSI only to client ajax request
+void handleWarn(){
+  String Warn = w;
+  server.send(200, "text/plane", Warn); //Send RSSI only to client ajax request
 }
 
 int WIFIreminder;
@@ -548,29 +574,30 @@ void setup() {
 
   server.on("/", handleRoot);      //This is display page
   server.on("/readADC", handleADC);//To get update of ADC Value only
-  server.on("/readRSSI", handleRSSI);//To get update of RSSI only
+  server.on("/readWarn", handleWarn);//To get update of RSSI only
   
   // Start streaming web server
   startCameraServer();
   server.begin();
 }
 
+String FromMega;
+
 void loop(){    
   server.handleClient();
   delay(1);
-
-  String Temper;
-  Temper = char(Serial.read());
-  if (Temper.length() > 0)
+  
+  if (Serial.available())
   {
-    temperature = temperature + Temper;  //字串相加
-    if(temperature.length() == 2)  //檢查字串是否達到 2 位數
+    FromMega = char(Serial.read());
+  }
+  if (FromMega.length() > 0)   // 接收命令 (此區只執行一次)
+  {
+    if (FromMega == "v")  // battery voltage reminder
     {
-      c = temperature;    
-      temperature = "";     //清空字串
+      w = 3;
     }
   }
-
   //Serial.print("WiFi RSSI:");
   //Serial.println(WiFi.RSSI()); //讀取WiFi強度
 
@@ -587,12 +614,6 @@ void loop(){
       if(WIFIreminder == 6) WIFIreminder = 0;  //迴圈執行6次 最少3秒跳一次警告
       w = 2;
     }
-    
     //Serial.println("signal too weak");
   }
-  else 
-  {
-    w = 2;
-  }
-  delay(1);
 }
