@@ -211,7 +211,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown'); disableClicksFor3s();">手臂下降</button>
     </div>
     <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable'); disableClicksFor3s();"><span>穩定機身</span></button>
-    <p style="clear:both"><br></p>
+    <p style="clear:both; color:Green" id="BtnUse">按鈕可使用<br></p>
     <div class="card">
       <h2 id="feedback">感測器數值</h2><br>
       <h4>Temperature : <span id="ADCValue">0</span> (degree C) </h4><br>
@@ -303,8 +303,13 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     
     function disableClicksFor3s() {
       freezeClic = true;
+      const div = document.getElementById("BtnUse");
+      div.innerHTML = "按鈕禁用中";
+      div.style.color = "Red";
       setTimeout(() => {
         freezeClic = false;
+        div.innerHTML = "按鈕可使用";
+        div.style.color = "Green";
       }, 3000);
     }
     </script>
