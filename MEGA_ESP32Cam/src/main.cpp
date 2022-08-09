@@ -145,6 +145,7 @@ void setup() {
   temperature = 0;
 }
 
+int actioncomplete = 1;   //1 = 動作完成；0 = 動作未完成
 int stableStart = 0;
 int speed1, speed2, speed3, speed4, speed5, speed6 = 1475;
 int originSpeed1, originSpeed2;
@@ -153,10 +154,11 @@ int speednum = 0;
 //int interval;
 //int spdifference1, spdifference2, spdifference3, spdifference4, spdifference5, spdifference6; 
 int steppernum = 0;
+int speedlimit = 0;
 
 void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
     command = "";
-    if (Serial2.available())
+    if (Serial2.available() && actioncomplete == 1)
     {
       command = char(Serial2.read());
     }    
@@ -170,9 +172,17 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "f")  // forward
         {
           Serial.print("收到f命令");
-          //myServo.writeMicroseconds(1600);
-          control = 1;
-          stableStart = 0;
+          if(speedlimit < 4)
+          {
+            speedlimit++;
+            control = 1;
+            actioncomplete = 0;
+          }
+          else
+          {
+            speedlimit = 4;
+          }
+          stableStart = 0;          
           speednum = 0;
         }
         if (command == "l")  // left
@@ -181,6 +191,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           control = 2;
           originSpeed2 = speed2;
           stableStart = 0;
+          actioncomplete = 0;
           speednum = 0;
         }
         if (command == "r")  // right
@@ -189,12 +200,22 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           control = 3;
           originSpeed1 = speed1;
           stableStart = 0;
+          actioncomplete = 0;
           speednum = 0;
         }
         if (command == "b")  // backward
         {
           Serial.print("收到b命令");
-          control = 4;
+          if(speedlimit > (-2))
+          {
+            speedlimit--;
+            control = 4;
+            actioncomplete = 0;
+          }
+          else
+          {
+            speedlimit = -2;
+          }
           stableStart = 0;
           speednum = 0;
         }
@@ -203,6 +224,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           Serial.print("收到t命令");
           control = 5;
           stableStart = 0;
+          actioncomplete = 0;
           speednum = 0;
           // spdifference1 = speed1 - 1475;
           // spdifference2 = speed2 - 1475;
@@ -227,7 +249,8 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if (command == "h")  // hand
         {
           Serial.println("收到h命令");
-          //stableStart = 0;          
+          //stableStart = 0;
+          actioncomplete = 0;          
           if(steppernum == 0)
           {
             digitalWrite(dirPin1,HIGH);
@@ -242,7 +265,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           }
           else
           {
-            digitalWrite(1,LOW);
+            digitalWrite(dirPin1,LOW);
             for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
             {
               digitalWrite(stepPin1,HIGH);
@@ -251,12 +274,14 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
               delayMicroseconds(1000);
             }
             steppernum = 0;
-          }                 
+          } 
+          actioncomplete = 1;                
         }
         if (command == "a")  // armup
         {
           Serial.println("收到a命令");
           stableStart = 0;
+          actioncomplete = 0;
           digitalWrite(dirPin1,HIGH);
           for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
           {
@@ -265,11 +290,13 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
             digitalWrite(stepPin1,LOW);
             delayMicroseconds(1000);
           }
+          actioncomplete = 1;
         }
         if (command == "q")  // armdown
         {
           Serial.println("收到q命令");
           stableStart = 0;
+          actioncomplete = 0;
           digitalWrite(dirPin1,LOW);
           for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
           {
@@ -278,12 +305,14 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
             digitalWrite(stepPin1,LOW);
             delayMicroseconds(1000);
           }
+          actioncomplete = 1;
         }
         if (command == "d")  // dive
         {
           Serial.print("收到d命令");
           control = 6;
           stableStart = 0;
+          actioncomplete = 0;
           speednum = 0;
         }
         if (command == "e")  // rise
@@ -291,6 +320,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
           Serial.println("收到e命令");
           control = 7;
           stableStart = 0;
+          actioncomplete = 0;
           speednum = 0;
         }
       }
@@ -312,6 +342,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         {
           speednum = 0;
           control = 0;
+          actioncomplete = 1;
         }
         break;
 
@@ -329,6 +360,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
             speed2 = originSpeed2;
             speednum = 0;
             control = 0;
+            actioncomplete = 1;
           }
         }
         break;
@@ -347,6 +379,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
             speed1 = originSpeed1;
             speednum = 0;
             control = 0;
+            actioncomplete = 1;
           }
         }
         break;
@@ -359,8 +392,10 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         {
           speednum = 0;
           control = 0;
+          actioncomplete = 1;
         }
         break;
+
       case 5:      //停止
         speednum = 0;
         
@@ -380,6 +415,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         if(speed1==1475 && speed2==1475 && speed3==1475 && speed4==1475 && speed5==1475 && speed6==1475) 
         {          
           control = 0;
+          actioncomplete = 1;
         }
         break;
 
@@ -393,6 +429,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         {
           speednum = 0;
           control = 0;
+          actioncomplete = 1;
         }
         break;
 
@@ -406,6 +443,7 @@ void loop(){    //重要：MPU6050 INT腳位拔掉才會無限循環
         {
           speednum = 0;
           control = 0;
+          actioncomplete = 1;
         }
         break;
     }
