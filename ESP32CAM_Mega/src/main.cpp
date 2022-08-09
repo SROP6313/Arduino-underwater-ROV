@@ -211,14 +211,14 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown'); disableClicksFor3s();">手臂下降</button>
     </div>
     <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable'); disableClicksFor3s();"><span>穩定機身</span></button>
-    <p style="clear:both; color:Green" id="BtnUse">按鈕可使用<br></p>
+    <p style="clear:both"><br></p>
     <div class="card">
       <h2 id="feedback">感測器數值</h2><br>
       <h4>Temperature : <span id="ADCValue">0</span> (degree C) </h4><br>
       <h4>Pressure : <span id="pressureValue">0</span> (Pa) </h4><br>
     </div>
-   <script>
-   function toggleCheckbox(x) {
+  <script>
+  function toggleCheckbox(x) {
      var xhr = new XMLHttpRequest();
      xhr.open("GET", "/action?go=" + x, true);
      xhr.send();
@@ -231,7 +231,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     getWarn();
   }, 500); //500ms update rate
     
-    var wifi;
+    var warn;
+    var warnaccept = 1;
     function getTemper() {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
@@ -249,16 +250,24 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         if (warnhttp.readyState == 4 && warnhttp.status == 200) {
           warn = parseInt(warnhttp.responseText);
           console.log(warn);  //主控台顯示warn值
-          if(warn == 1)
+          if(warn == 1 && warnaccept == 1)
           {
             alert("警告!訊號過低");
+            warnaccept = 0;
+            setTimeout(() => {
+              warnaccept = 1;
+            }, 3000);    //3秒跳一次警告
           }
-          if(warn == 3)
+          if(warn == 3 && warnaccept == 1)
           {
             alert("警告!電池電壓過低");
+            warnaccept = 0;
+            setTimeout(() => {
+              warnaccept = 1;
+            }, 3000);
           }
         }
-      };
+      };      
       warnhttp.open("GET", "readWarn", true);
       warnhttp.send();
     }
@@ -289,29 +298,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
     var clock = new Clock();
     clock.display(document.getElementById("clock"));
-    
-    let freezeClic = false; // just modify that variable to disable all clics events
-
-    document.addEventListener("click", freezeClicFn, true);
-
-    function freezeClicFn(e) {
-      if (freezeClic) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    }
-    
-    function disableClicksFor3s() {
-      freezeClic = true;
-      const div = document.getElementById("BtnUse");
-      div.innerHTML = "按鈕禁用中";
-      div.style.color = "Red";
-      setTimeout(() => {
-        freezeClic = false;
-        div.innerHTML = "按鈕可使用";
-        div.style.color = "Green";
-      }, 3000);
-    }
     </script>
   </body> 
 </html>
@@ -591,6 +577,7 @@ String FromMega;
 void loop(){    
   server.handleClient();
   delay(1);
+  FromMega = "";
   
   if (Serial.available())
   {
@@ -606,19 +593,12 @@ void loop(){
   //Serial.print("WiFi RSSI:");
   //Serial.println(WiFi.RSSI()); //讀取WiFi強度
 
-  if(WiFi.RSSI()<(-200))     //RSSI小於-60跳警告
+  if(WiFi.RSSI()<(-200))     //RSSI小於-200跳警告
   {
-    if(WIFIreminder == 0) 
-    {
-      w = 1;
-      WIFIreminder++;
-    }
-    else
-    {
-      WIFIreminder++;
-      if(WIFIreminder == 6) WIFIreminder = 0;  //迴圈執行6次 最少3秒跳一次警告
-      w = 2;
-    }
-    //Serial.println("signal too weak");
+    w = 1;
+  }
+  else
+  {
+    w = 2;
   }
 }
