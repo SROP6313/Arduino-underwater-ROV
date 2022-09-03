@@ -1,0 +1,14 @@
+<html>
+    <style>
+      img {  
+        transform: rotate(90deg);
+        width: 380px ;
+        max-width: 100% ;
+        height: 320px ;
+      }
+    </style>
+    <img src="" id="photo" alt="no signal"  style="transform:rotate(90deg);">
+  <script>
+    window.onload = document.getElementById("photo").src = window.location.href.slice(0, -1) + ":81/stream";   
+  </script> 
+</html>
