@@ -12,8 +12,8 @@ Purpose: Users can use the HTML UI built by ESP32(CAM) webserver to control moto
 
 | Protocol  | Analysis|
 | ---------- | -----------|
-| UART   | The serial buffer data often accumulate and delay. The stability is not good. |
-| I2C   | The transmission delay is very small without sensor installed. But there's no example on internet that can show one device can be I2C master and slave at the same time. I tried SoftwareI2C libraries, but they only support I2C master mode, and most sensors do not support the libraries. The SoftwareI2C libraries seem cannot be put together with normal I2C library(Wire.h).  |
-| SPI   | The transmission speed is the fastest. But the two-way communication codes are more complex than I2C(I'm still working on this).  |
+| ~~UART~~  | The serial buffer data often accumulate and delay. The stability is not good. |
+| ~~I2C~~   | The transmission delay is very small without sensor installed. But there's no example on internet that can show one device can be I2C master and slave at the same time. I tried SoftwareI2C libraries, but they only support I2C master mode, and most sensors do not support the libraries. The SoftwareI2C libraries seem cannot be put together with normal I2C library(Wire.h) in the same sketch.  |
+| SPI  | The transmission speed is the fastest. But the two-way communication codes are more complex than I2C(I'm still working on this).  |
 
 </div>
