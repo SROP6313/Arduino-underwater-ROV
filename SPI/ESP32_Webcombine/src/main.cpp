@@ -309,7 +309,7 @@ static esp_err_t index_handler(httpd_req_t *req){
   return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
 }
 
-//bool actionreceivefromMega = true;
+char m_send;
 
 static esp_err_t cmd_handler(httpd_req_t *req){
   char*  buf;
@@ -345,102 +345,47 @@ static esp_err_t cmd_handler(httpd_req_t *req){
 
   if(!strcmp(variable, "forward")) {
     Serial.println("f");
-    char c;
-    digitalWrite(SS, LOW); // enable Slave Select
-    for (const char * p = "f\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH); // disable Slave Select
+    m_send = 'f';
   }
   else if(!strcmp(variable, "left")) {
     Serial.println("l");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "l\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'l';
   }
   else if(!strcmp(variable, "right")) {
     Serial.println("r");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "r\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'r';
   }
   else if(!strcmp(variable, "backward")) {
     Serial.println("b");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "b\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'b';
   }
   else if(!strcmp(variable, "stop")) {
     Serial.println("t");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "t\r" ; c = *p; p++) {
-      SPI.transfer (c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 't';
   }
   else if(!strcmp(variable, "stable")) {
     Serial.println("s");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "s\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 's';
   }
   else if(!strcmp(variable, "hand")) {
     Serial.println("h");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "h\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'h';
   }
   else if(!strcmp(variable, "armup")) {
     Serial.println("a");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "a\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'a';
   }
   else if(!strcmp(variable, "armdown")) {
     Serial.println("q");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "q\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'q';
   }
   else if(!strcmp(variable, "dive")) {
     Serial.println("d");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "d\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'd';
   }
   else if(!strcmp(variable, "rise")) {
     Serial.println("e");
-    char c;
-    digitalWrite(SS, LOW);
-    for (const char * p = "e\r" ; c = *p; p++) {
-      SPI.transfer(c);
-    }
-    digitalWrite(SS, HIGH);
+    m_send = 'e';
   }
   else {
     res = -1;
@@ -547,7 +492,8 @@ void setup () {
 
 float tempera, pressu;
 int sensernum = 0;
-int speedstatusnum = 0;
+int SPIsendnum = 0;
+byte m_receive;
 
 void loop () {
   server.handleClient();
@@ -580,39 +526,14 @@ void loop () {
     //Serial.println(WiFi.RSSI());
   }
 
-  /* if(actionreceivefromMega)  //接收來自 Mega 的訊息
+  SPIsendnum++;
+  if(SPIsendnum >= 100)
   {
-    speedstatusnum++;
-    if(speedstatusnum >= 25)
-    {
-      speedstatusnum = 0;
-      char buf [20];
-
-      // enable Slave Select
-      digitalWrite(SS, LOW);
-      SPI.transfer (1);   // initiate transmission
-      for (int pos = 0; pos < sizeof (buf) - 1; pos++)
-      {
-        delayMicroseconds (15);
-        buf [pos] = SPI.transfer (0);
-        if (buf [pos] == 0)
-        {
-          break;
-        }
-      }
-
-      buf [sizeof (buf) - 1] = 0;  // ensure terminating null
-
-      // disable Slave Select
-      digitalWrite(SS, HIGH);
-
-      Serial.print ("We received: ");
-      Serial.println (buf);
-
-      if(buf[0] == 'b' && buf[1] == '1')
-      {
-        Serial.println("執行");
-      }
-    }
-  } */
+    SPIsendnum = 0;
+    char c = m_send;
+    digitalWrite(SS, LOW); // enable Slave Select
+    m_receive = SPI.transfer(c);
+    Serial.println(m_receive);
+    m_send = 0;
+  }
 }
