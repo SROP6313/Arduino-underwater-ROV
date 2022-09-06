@@ -14,10 +14,6 @@
 MPU6050 mpu;
 Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵機對象來控制電調
 
-char buff [50];
-volatile byte indx;
-volatile boolean process;
-
 #define OUTPUT_READABLE_YAWPITCHROLL
 
 #define dirPin1 2
@@ -52,12 +48,12 @@ void dmpDataReady() {
 
 int temperature; 
 String command;
+volatile boolean process;
 
 void setup () {
   Serial.begin (115200);
   pinMode(MISO, OUTPUT); // have to send on master in so it set as output
   SPCR |= _BV(SPE); // turn on SPI in slave mode
-  indx = 0; // buffer empty
   process = false;
   SPI.attachInterrupt(); // turn on interrupt
   // Serial.print("MOSI: ");
@@ -145,64 +141,33 @@ void setup () {
   }
 }
 
-//volatile char buf [20] = "B1";
-volatile int pos;
-volatile bool active;
-volatile bool actionsendback = false;
+char buff [50];
+volatile byte indx;
+volatile byte s_received;
+byte c;
 
 ISR (SPI_STC_vect) {// SPI interrupt routine { 
-  byte c = SPDR; // read byte from SPI Data Register
-  
-  // if (c == 1)  // starting new sequence?
-  // {
-  //   active = true;
-  //   actionsendback = true;
-  //   pos = 0;
-  //   SPDR = buf [pos++];   // send first byte
-  //   return;    //直接結束中斷程式區
-  // }
-
-  // if(actionsendback)
-  // {
-  //   if (!active)
-  //   {
-  //     SPDR = 0;
-  //     return;
-  //   }
-
-  //   SPDR = buf [pos];
-  //   pos++;
-    
-  //   if (buf [pos] == 0 || pos >= sizeof (buf))
-  //   {
-  //     active = false;
-  //     actionsendback = false;
-  //   }
-  // }
-  
-  if (indx < sizeof buff && actionsendback == false) {
-    buff [indx++] = c; // save data in the next index in the array buff
-    if (c == '\r') //check for the end of the word
-    {
-      process = true;
-    }    
-  }
+  c = SPDR; // read byte from SPI Data Register
+  process = true;
 }
 
 int actioncomplete = 1;   //1 = 動作完成；0 = 動作未完成
 int stableStart = 0;
-int speed1 = 1475, speed2, speed3, speed4, speed5, speed6 = 1475;
+int speed1 = 1475, speed2 = 1475, speed3 = 1475, speed4 = 1475, speed5 = 1475, speed6 = 1475;
 int originSpeed1, originSpeed2;
 int control = 0;
 int speednum = 0; 
 int steppernum = 0;
 int speedlimit = 0;
+byte speedstatus = 5;  // 5 = stop
 
 void loop () {
   if (process && actioncomplete == 1) {
     process = false; //reset the process
     //Serial.println (buff); //print the array on serial monitor
-    if(buff[0] == 'f')  // forward
+    s_received = c;
+    c = 0;
+    if(s_received == 'f')  // forward
     {
       Serial.println("收到f命令");
       if(speedlimit < 4)
@@ -217,8 +182,9 @@ void loop () {
       }
       stableStart = 0;          
       speednum = 0;
+      speedstatus++;
     }
-    else if(buff[0] == 'l')  // left
+    else if(s_received == 'l')  // left
     {
       Serial.println("收到l命令");
       control = 2;
@@ -227,7 +193,7 @@ void loop () {
       actioncomplete = 0;
       speednum = 0;
     }
-    else if(buff[0] == 'r')  // right
+    else if(s_received== 'r')  // right
     {
       Serial.print("收到r命令");
       control = 3;
@@ -236,7 +202,7 @@ void loop () {
       actioncomplete = 0;
       speednum = 0;
     }
-    else if(buff[0] == 'b')  // backward
+    else if(s_received == 'b')  // backward
     {
       Serial.println("收到b命令");
       if(speedlimit > (-2))
@@ -251,8 +217,9 @@ void loop () {
       }
       stableStart = 0;
       speednum = 0;
+      speedstatus--;
     }
-    else if (buff[0] == 't')  // stop
+    else if (s_received == 't')  // stop
     {
       Serial.print("收到t命令");
       control = 5;
@@ -260,12 +227,12 @@ void loop () {
       actioncomplete = 0;
       speednum = 0;
     }
-    else if (buff[0] == 's')  // stable
+    else if (s_received == 's')  // stable
     {
       Serial.print("收到s命令");
       stableStart = 1;
     }
-    else if (buff[0] == 'h')  // hand
+    else if (s_received == 'h')  // hand
     {
       Serial.println("收到h命令");
       //stableStart = 0;
@@ -296,7 +263,7 @@ void loop () {
       } 
       actioncomplete = 1;  
     }
-    else if (buff[0] == 'a')  // armup
+    else if (s_received == 'a')  // armup
     {
       Serial.println("收到a命令");
       stableStart = 0;
@@ -311,7 +278,7 @@ void loop () {
       }
       actioncomplete = 1;
     }
-    else if (buff[0] == 'q')  // armdown
+    else if (s_received == 'q')  // armdown
     {
       Serial.println("收到q命令");
       stableStart = 0;
@@ -326,7 +293,7 @@ void loop () {
       }
       actioncomplete = 1;
     }
-    else if (buff[0] == 'd')  // dive
+    else if (s_received == 'd')  // dive
     {
       Serial.print("收到d命令");
       control = 6;
@@ -334,7 +301,7 @@ void loop () {
       actioncomplete = 0;
       speednum = 0;
     }
-    else if (buff[0] == 'e')  // rise
+    else if (s_received == 'e')  // rise
     {
       Serial.println("收到e命令");
       control = 7;
@@ -342,7 +309,11 @@ void loop () {
       actioncomplete = 0;
       speednum = 0;
     }
-    indx= 0; //reset button to zero
+    else
+    {
+      SPDR = speedstatus;
+    }
+    indx = 0; //reset button to zero
   }
 
   switch (control)
@@ -435,6 +406,7 @@ void loop () {
       {          
         control = 0;
         actioncomplete = 1;
+        speedstatus = 5;
       }
       break;
 
