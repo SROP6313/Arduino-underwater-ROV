@@ -169,6 +169,145 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         padding: 14px 16px;
         text-decoration: none;
       }
+      
+      body {
+        font-family: Arial;
+        text-transform: capitalize;
+      }
+                
+      .progress {
+        position: absolute;
+        top: 860px;
+        width: 0%;
+        height: 10px;
+        background-color: #2183DD;
+        transition: width 0.2s;
+      }
+      .progress.progress--1 {
+        width: calc(14.3%);
+      }
+      .progress.progress--2 {
+        width: calc(28.6%);
+      }
+      .progress.progress--3 {
+        width: calc(42.9%);
+      }
+      .progress.progress--4 {
+        width: calc(57.2%);
+      }
+      .progress.progress--5 {
+        width: calc(71.5%);
+      }
+      .progress.progress--6 {
+        width: calc(85.8%);
+      }
+      .progress.progress--7 {
+        width: calc(100%);
+      }
+      .progress.progress--complete {
+        width: 100vw;
+      }
+      
+      .progress__bg {
+        position: absolute;
+        width: 100vw;
+        height: 10px;
+        background-color: #E5E5E5;
+        z-index: -1;
+      }
+      
+      .progress__step {
+        position: absolute;
+        top: -8px;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .progress__step.progress__step--1 {
+        left: calc(14.3vw - 9px);
+      }
+      .progress__step.progress__step--2 {
+        left: calc(28.6vw - 9px);
+      }
+      .progress__step.progress__step--3 {
+        left: calc(42.9vw - 9px);
+      }
+      .progress__step.progress__step--4 {
+        left: calc(57.2vw - 9px);
+      }
+      .progress__step.progress__step--5 {
+        left: calc(71.5vw - 9px);
+      }
+      .progress__step.progress__step--6 {
+        left: calc(85.8vw - 9px);
+      }
+      .progress__step.progress__step--7 {
+        left: calc(100vw - 9px);
+      }
+      .progress__step.progress__step--active {
+        color: #2183DD;
+        font-weight: 600;
+      }
+      .progress__step.progress__step--complete .progress__indicator {
+        background-color: #009900;
+        border-color: #2183DD;
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .progress__step.progress__step--complete .progress__indicator .fa {
+        display: block;
+      }
+      .progress__step.progress__step--complete .progress__label {
+        font-weight: 600;
+        color: #009900;
+      }
+      
+      .progress__indicator {
+        width: 25px;
+        height: 25px;
+        border: 2px solid #808080;
+        border-radius: 50%;
+        background-color: #FFFFFF;
+        margin-bottom: 10px;
+      }
+      .progress__indicator .fa {
+        display: none;
+        font-size: 16px;
+        color: #FFFFFF;
+      }
+      
+      .progress__label {
+        position: absolute;
+        font-size: 10px;
+        top: 40px;
+      }
+      
+      .progress__actions {
+        position: absolute;
+        top: 75px;
+        left: 10px;
+        display: flex;
+        align-items: center;
+        width: max-content;
+      }
+      
+      .btn {
+        width: fit-content;
+        padding: 5px 8px;
+        background-color: #FFFFFF;
+        border: 1px solid #808080;
+        border-radius: 5px;
+        cursor: pointer;
+        user-select: none;
+        visibility: hidden;
+      }
+      .btn:nth-child(2) {
+        margin: 0 10px;
+      }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
     <h3 id="clock" style="font-family:Microsoft JhengHei;"></h3>
@@ -208,6 +347,38 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
     <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
+    <p><br></p>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+      <div id="app" :class="progressClasses">
+        <div class="progress__bg"></div>
+        <template v-for="(step, index) in steps">
+          <div :class="stepClasses(index)">
+            <div class="progress__indicator">
+                <i class="fa fa-check"></i>
+            </div>
+            <div class="progress__label">
+                {{step.label}}
+            </div>
+          </div>
+        </template>
+        
+        <div class="progress__actions">
+          <div
+          class="btn"
+          v-on:click="nextStep(false)"
+          >
+          Back
+          </div>
+          <div
+          class="btn"
+          id = "NS"
+          v-on:click="nextStep"
+          >
+          Next
+          </div>
+        </div>
+      </div>
+    
     <p style="clear:both"><br></p>
     <div class="card">
       <h2 id="feedback">感測器數值</h2><br>
@@ -215,21 +386,30 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <h4>Pressure : <span id="pressureValue"></span> (mbar) </h4><br>
     </div>
   <script>
-  function toggleCheckbox(x) {
-     var xhr = new XMLHttpRequest();
-     xhr.open("GET", "/action?go=" + x, true);
-     xhr.send();
-   }
-   window.onload = document.getElementById("photo").src = window.location.href.slice(0, -1) + ":81/stream";
+    function toggleCheckbox(x) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/action?go=" + x, true);
+      xhr.send();
+    }
+    window.onload = document.getElementById("photo").src = window.location.href.slice(0, -1) + ":81/stream";
 
-   setInterval(function() {
-  // Call a function repetatively with 2 Second interval
-    getTemper();
-    getPressure();
-  }, 50); //50ms update rate 太短可能導致按鈕失靈(經測試50不錯)
-  setInterval(function() {
-    getWarn();
-  }, 3000);
+    setInterval(function() {
+    // Call a function repetatively with 2 Second interval
+      getTemper();
+      getPressure();
+      getSpeedstatus();
+    }, 50); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
+    setInterval(function() {
+      getWarn();
+    }, 3000);
+    setInterval(function(){
+      sampleClick();
+    },500);
+   
+    function sampleClick() {
+      var btnX = document.getElementById("NS");
+      btnX.click();
+    }
    
     var warn;
     function getTemper() {
@@ -299,6 +479,66 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
     var clock = new Clock();
     clock.display(document.getElementById("clock"));
+    
+    var index;
+    
+    var app = new Vue({
+      el: '#app',
+      data: {
+      currentStep: null,
+      steps: [
+        {"label": "back2"},
+        {"label": "back1"},
+        {"label": "stop"},
+        {"label": "forward1"},
+        {"label": "forward2"},
+        {"label": "forward3"},
+      ]
+      },
+      methods: {
+        nextStep(next=true) {
+          const steps = this.steps
+          const currentStep = this.currentStep
+          const currentIndex = steps.indexOf(currentStep)
+          if (steps[index]) {
+            return this.currentStep = steps[index]
+          }
+
+          this.currentStep = { "label": "complete" }
+        },
+        stepClasses(index) {
+          let result = `progress__step progress__step--${index + 1} `
+          if (this.currentStep && this.currentStep.label === 'complete' ||
+          index < this.steps.indexOf(this.currentStep)) {
+            return result += 'progress__step--complete'
+          }
+          if (index === this.steps.indexOf(this.currentStep)) {
+            return result += 'progress__step--active'
+          }
+          return result
+        }
+      },
+      computed: {
+        progressClasses() {
+          let result = 'progress '
+          if (this.currentStep && this.currentStep.label === 'complete') {
+          return result += 'progress--complete'
+          }
+          return result += `progress--${this.steps.indexOf(this.currentStep) + 1}`
+        }
+      }
+    })
+    function getSpeedstatus() {
+      var statushttp = new XMLHttpRequest();
+      statushttp.onreadystatechange = function() {
+        if (statushttp.readyState == 4 && statushttp.status == 200){
+          window.index = parseInt(statushttp.responseText) - 3;
+          console.log("index:" + index);  //主控台顯示warn值
+        }
+      };
+      statushttp.open("GET", "readStatus", true);
+      statushttp.send();
+    }
     </script>
   </body> 
 </html>
@@ -449,6 +689,12 @@ void handleWarn(){
   server.send(200, "text/plane", Warn); //Send RSSI only to client ajax request
 }
 
+byte m_receive;
+void handleSpeedstatus(){
+  String Status = String(m_receive);
+  server.send(200, "text/plane", Status);
+}
+
 int WIFIreminder;
 MS5837 sensor;
 
@@ -480,6 +726,7 @@ void setup () {
   server.on("/readTemper", handleTemper);//To get update of ADC Value only
   server.on("/readPressure", handlePressure);
   server.on("/readWarn", handleWarn);//To get update of RSSI only
+  server.on("/readStatus", handleSpeedstatus);
   
   // Start streaming web server
   startCameraServer();
@@ -493,7 +740,6 @@ void setup () {
 float tempera, pressu;
 int sensernum = 0;
 int SPIsendnum = 0;
-byte m_receive;
 
 void loop () {
   server.handleClient();
