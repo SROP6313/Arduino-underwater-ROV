@@ -123,17 +123,19 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         width: 33.333%;
         font-family:Microsoft JhengHei;
       }
-      .buttonStb {
-        display: inline-block;
+      .btn-group4 .buttonStb {
         background-color: DarkSalmon;
-        border: none;
-        color: #FFFFFF;
-        text-align: center;
-        font-size: 16px;
+        border: 1px solid white;
+        color: white;
         padding: 10px;
-        width: 100%;
-        transition: all 0.5s;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
         cursor: pointer;
+        float: left;
+        transition-duration: 0.4s;
+        width: 50%;
         margin: 10px 0 0 0;
         font-family:Microsoft JhengHei;
       }
@@ -346,7 +348,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonHdAm" onclick="toggleCheckbox('armup');">手臂抬升</button>
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
+    <div class="btn-group4">
     <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
+    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('reset');"><span>重置MEGA</span></button>
+    </div>
     <p><br></p>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
       <div id="app" :class="progressClasses">
@@ -379,6 +384,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         </div>
       </div>
     
+    <p style="clear:both"><br></p>
     <p style="clear:both"><br></p>
     <div class="card">
       <h2 id="feedback">感測器數值</h2><br>
@@ -549,7 +555,7 @@ static esp_err_t index_handler(httpd_req_t *req){
   return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
 }
 
-char m_send;
+volatile byte m_send;   //中斷要改變的值設為 volatile
 
 static esp_err_t cmd_handler(httpd_req_t *req){
   char*  buf;
@@ -627,6 +633,10 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     Serial.println("e");
     m_send = 'e';
   }
+  else if(!strcmp(variable, "reset")) {
+    Serial.println("x");
+    m_send = 'x';
+  }
   else {
     res = -1;
   }
@@ -673,8 +683,6 @@ String temperature, pressure;
 
 void handleTemper() { 
   String temperValue = temperature;
-  //int a = 666;
-  // String adcValue = String(a); 
   server.send(200, "text/plane", temperValue); //Send ADC value only to client ajax request
 }
 
@@ -695,7 +703,6 @@ void handleSpeedstatus(){
   server.send(200, "text/plane", Status);
 }
 
-int WIFIreminder;
 MS5837 sensor;
 
 void setup () {
@@ -703,7 +710,6 @@ void setup () {
   digitalWrite(SS, HIGH); // disable Slave Select
   SPI.begin(ESP32_CAM_SCK,  ESP32_CAM_MISO, ESP32_CAM_MOSI, ESP32_CAM_SS);
   SPI.setClockDivider(SPI_CLOCK_DIV16);//divide the clock by 8
-  WIFIreminder = 0;
   
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
   
