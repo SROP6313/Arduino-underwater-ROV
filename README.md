@@ -17,3 +17,9 @@ Purpose: Users can use the HTML UI built by ESP32(CAM) webserver to control moto
 | SPI  | The transmission speed is the fastest. But the two-way communication codes are more complex than I2C's. ```SPDR```is the data buffer during transmission. I put the SPI.transfer() in the loop function of the Master device to avoid breaking the routine program. | send：```SPI.transfer()``` receive：```byte c = SPDR```|
 
 </div>
+
+## Webpage view <I>(last edit : 09/11/2022)</I>
+|||
+| ---------- | -----------|
+|![圖片](https://user-images.githubusercontent.com/103128273/189521336-3847824d-d62d-49c0-8e73-c2601d8e757c.png)| ![圖片](https://user-images.githubusercontent.com/103128273/189521429-989b38db-c229-469b-8200-6a71757fda5c.png)|
+
