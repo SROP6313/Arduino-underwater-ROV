@@ -8,11 +8,13 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    #include "Wire.h"
+  #include "Wire.h"
 #endif
 
 MPU6050 mpu;
 Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵機對象來控制電調
+
+void(* resetFunc) (void) = 0; // create a standard reset function
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
@@ -37,9 +39,6 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-
-// packet structure for InvenSense teapot demo
-uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
 void dmpDataReady() {
@@ -142,8 +141,7 @@ void setup () {
 }
 
 char buff [50];
-volatile byte indx;
-volatile byte s_received;
+byte s_received;
 byte c;
 
 ISR (SPI_STC_vect) {// SPI interrupt routine { 
@@ -151,8 +149,8 @@ ISR (SPI_STC_vect) {// SPI interrupt routine {
   process = true;
 }
 
-int actioncomplete = 1;   //1 = 動作完成；0 = 動作未完成
-int stableStart = 0;
+bool actioncomplete = true;   //true = 動作完成；false = 動作未完成
+bool stableStart = false;
 int speed1 = 1475, speed2 = 1475, speed3 = 1475, speed4 = 1475, speed5 = 1475, speed6 = 1475;
 int originSpeed1, originSpeed2;
 int control = 0;
@@ -162,7 +160,7 @@ int speedlimit = 0;
 byte speedstatus = 5;  // 5 = stop
 
 void loop () {
-  if (process && actioncomplete == 1) {
+  if (process && actioncomplete) {
     process = false; //reset the process
     //Serial.println (buff); //print the array on serial monitor
     s_received = c;
@@ -170,27 +168,26 @@ void loop () {
     if(s_received == 'f')  // forward
     {
       Serial.println("收到f命令");
-      if(speedlimit < 4)
+      if(speedlimit < 3)
       {
         speedlimit++;
         control = 1;
-        actioncomplete = 0;
+        actioncomplete = false;
       }
       else
       {
-        speedlimit = 4;
+        speedlimit = 3;
       }
-      stableStart = 0;          
+      stableStart = false;          
       speednum = 0;
-      speedstatus++;
     }
     else if(s_received == 'l')  // left
     {
       Serial.println("收到l命令");
       control = 2;
       originSpeed2 = speed2;
-      stableStart = 0;
-      actioncomplete = 0;
+      stableStart = false;
+      actioncomplete = false;
       speednum = 0;
     }
     else if(s_received== 'r')  // right
@@ -198,8 +195,8 @@ void loop () {
       Serial.print("收到r命令");
       control = 3;
       originSpeed1 = speed1;
-      stableStart = 0;
-      actioncomplete = 0;
+      stableStart = false;
+      actioncomplete = false;
       speednum = 0;
     }
     else if(s_received == 'b')  // backward
@@ -209,38 +206,38 @@ void loop () {
       {
         speedlimit--;
         control = 4;
-        actioncomplete = 0;
+        actioncomplete = false;
       }
       else
       {
         speedlimit = -2;
       }
-      stableStart = 0;
+      stableStart = false;
       speednum = 0;
-      speedstatus--;
     }
     else if (s_received == 't')  // stop
     {
       Serial.print("收到t命令");
       control = 5;
-      stableStart = 0;
-      actioncomplete = 0;
+      stableStart = false;
+      actioncomplete = false;
       speednum = 0;
     }
     else if (s_received == 's')  // stable
     {
       Serial.print("收到s命令");
-      stableStart = 1;
+      stableStart = true;
     }
     else if (s_received == 'h')  // hand
     {
       Serial.println("收到h命令");
+      noInterrupts();
       //stableStart = 0;
-      actioncomplete = 0;
+      actioncomplete = false;
       if(steppernum == 0)
       {
         digitalWrite(dirPin1,HIGH);
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
         {
           digitalWrite(stepPin1,HIGH);
           delayMicroseconds(1000);
@@ -252,7 +249,7 @@ void loop () {
       else
       {
         digitalWrite(dirPin1,LOW);
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
         {
           digitalWrite(stepPin1,HIGH);
           delayMicroseconds(1000);
@@ -261,59 +258,68 @@ void loop () {
         }
         steppernum = 0;
       } 
-      actioncomplete = 1;  
+      actioncomplete = true;
+      interrupts();
     }
     else if (s_received == 'a')  // armup
     {
       Serial.println("收到a命令");
-      stableStart = 0;
-      actioncomplete = 0;
+      noInterrupts();
+      stableStart = false;
+      actioncomplete = false;
       digitalWrite(dirPin1,HIGH);
-      for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+      for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
       {
         digitalWrite(stepPin1,HIGH);
         delayMicroseconds(1000);
         digitalWrite(stepPin1,LOW);
         delayMicroseconds(1000);
       }
-      actioncomplete = 1;
+      actioncomplete = true;
+      interrupts();
     }
     else if (s_received == 'q')  // armdown
     {
       Serial.println("收到q命令");
-      stableStart = 0;
-      actioncomplete = 0;
+      noInterrupts();
+      stableStart = false;
+      actioncomplete = false;
       digitalWrite(dirPin1,LOW);
-      for(int i=0; i<500; i++)    // i=500 步進馬達轉 0.5s
+      for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
       {
         digitalWrite(stepPin1,HIGH);
         delayMicroseconds(1000);
         digitalWrite(stepPin1,LOW);
         delayMicroseconds(1000);
       }
-      actioncomplete = 1;
+      actioncomplete = true;
+      interrupts();
     }
     else if (s_received == 'd')  // dive
     {
       Serial.print("收到d命令");
       control = 6;
-      stableStart = 0;
-      actioncomplete = 0;
+      stableStart = false;
+      actioncomplete = false;
       speednum = 0;
     }
     else if (s_received == 'e')  // rise
     {
       Serial.println("收到e命令");
       control = 7;
-      stableStart = 0;
-      actioncomplete = 0;
+      stableStart = false;
+      actioncomplete = false;
       speednum = 0;
+    }
+    else if (s_received == 'x')  // reset Mega board
+    {
+      Serial.println("收到x命令");
+      resetFunc();  // reset the Arduino via software function
     }
     else
     {
       SPDR = speedstatus;
     }
-    indx = 0; //reset button to zero
   }
 
   switch (control)
@@ -332,7 +338,8 @@ void loop () {
       {
         speednum = 0;
         control = 0;
-        actioncomplete = 1;
+        speedstatus++;
+        actioncomplete = true;
       }
       break;
 
@@ -341,7 +348,7 @@ void loop () {
       if(speednum < 100)
       {
         speed2--;
-      }        
+      }
       else
       {
         speed2++;
@@ -350,7 +357,7 @@ void loop () {
           speed2 = originSpeed2;
           speednum = 0;
           control = 0;
-          actioncomplete = 1;
+          actioncomplete = true;
         }
       }
       break;
@@ -369,7 +376,7 @@ void loop () {
           speed1 = originSpeed1;
           speednum = 0;
           control = 0;
-          actioncomplete = 1;
+          actioncomplete = true;
         }
       }
       break;
@@ -382,7 +389,8 @@ void loop () {
       {
         speednum = 0;
         control = 0;
-        actioncomplete = 1;
+        speedstatus--;
+        actioncomplete = true;
       }
       break;
 
@@ -405,7 +413,8 @@ void loop () {
       if(speed1==1475 && speed2==1475 && speed3==1475 && speed4==1475 && speed5==1475 && speed6==1475) 
       {          
         control = 0;
-        actioncomplete = 1;
+        actioncomplete = true;
+        speedlimit = 0;
         speedstatus = 5;
       }
       break;
@@ -420,7 +429,7 @@ void loop () {
       {
         speednum = 0;
         control = 0;
-        actioncomplete = 1;
+        actioncomplete = true;
       }
       break;
 
@@ -434,17 +443,10 @@ void loop () {
       {
         speednum = 0;
         control = 0;
-        actioncomplete = 1;
+        actioncomplete = true;
       }
       break;
   }
-  myServo1.writeMicroseconds(speed1);
-  myServo2.writeMicroseconds(speed2);
-  myServo3.writeMicroseconds(speed3);
-  myServo4.writeMicroseconds(speed4);
-  myServo5.writeMicroseconds(speed5);
-  myServo6.writeMicroseconds(speed6);
-  delay(10);
 
   if (!dmpReady) return;
     // read a packet from FIFO
@@ -462,17 +464,48 @@ void loop () {
       Serial.print(ypr[1] * 180/M_PI);
       Serial.print("\t");
       Serial.println(ypr[2] * 180/M_PI);
-      if(stableStart == 1)
+      if(stableStart == true)
       {
-        if((ypr[1] * 180/M_PI)>30 || (ypr[1] * 180/M_PI)<-30)
+        if((ypr[1] * 180/M_PI)>30)
         {
           Serial.println("馬達轉動!");
+          speed3--;
+          speed4--;
+          speed5++;
+          speed6++;
         }
-        if((ypr[2] * 180/M_PI)>30 || (ypr[2] * 180/M_PI)<-30)
+        if((ypr[1] * 180/M_PI)<-30)
         {
           Serial.println("馬達轉動!");
+          speed3++;
+          speed4++;
+          speed5--;
+          speed6--;
+        }
+        if((ypr[2] * 180/M_PI)>30)
+        {
+          Serial.println("馬達轉動!");
+          speed3--;
+          speed5--;
+          speed4++;
+          speed6++;
+        }
+        if((ypr[2] * 180/M_PI)<-30)
+        {
+          Serial.println("馬達轉動!");
+          speed3++;
+          speed5++;
+          speed4--;
+          speed6--;
         }
       }
     #endif    
   }
+  myServo1.writeMicroseconds(speed1);
+  myServo2.writeMicroseconds(speed2);
+  myServo3.writeMicroseconds(speed3);
+  myServo4.writeMicroseconds(speed4);
+  myServo5.writeMicroseconds(speed5);
+  myServo6.writeMicroseconds(speed6);
+  delay(10);
 }
