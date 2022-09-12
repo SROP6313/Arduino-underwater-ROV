@@ -6,6 +6,9 @@ The arduino project on Platformio in Microsoft VScode
 <br>
 Purpose: Users can use the HTML UI built by ESP32(CAM) webserver to control motors connected to Mega2560. And the sensor data(pressure & temperature) can also show on the HTML UI.
 <br>
+## The program flow chart <I>(last edit : 09/12/2022)</I>
+![圖片](https://user-images.githubusercontent.com/103128273/189593978-d71ab29a-e495-48fb-960a-d0849e7bd1d6.png)
+
 ## The Protocol between Arduino Mega2560 and ESP32  <I>(last edit : 09/09/2022)</I>
 <br>
 <div align="center">
