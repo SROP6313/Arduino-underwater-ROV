@@ -14,7 +14,7 @@
 MPU6050 mpu;
 Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵機對象來控制電調
 
-void(* resetFunc) (void) = 0; // create a standard reset function
+#define ResetPin 13
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
@@ -51,6 +51,9 @@ volatile boolean process;
 
 void setup () {
   Serial.begin (115200);
+  digitalWrite(ResetPin, HIGH); // Set digital pin to 5V
+  pinMode(ResetPin, OUTPUT); // Set the digital pin to an OUTPUT pin
+
   pinMode(MISO, OUTPUT); // have to send on master in so it set as output
   SPCR |= _BV(SPE); // turn on SPI in slave mode
   process = false;
@@ -140,7 +143,6 @@ void setup () {
   }
 }
 
-char buff [50];
 byte s_received;
 byte c;
 
@@ -227,6 +229,7 @@ void loop () {
     {
       Serial.print("收到s命令");
       stableStart = true;
+      control = 0;
     }
     else if (s_received == 'h')  // hand
     {
@@ -314,7 +317,8 @@ void loop () {
     else if (s_received == 'x')  // reset Mega board
     {
       Serial.println("收到x命令");
-      resetFunc();  // reset the Arduino via software function
+      delay(100);
+      digitalWrite(ResetPin, LOW);
     }
     else
     {
@@ -333,7 +337,7 @@ void loop () {
     case 1:      //前進
       speednum++;
       speed1++;
-      speed2++;
+      speed2--;
       if(speednum >= 100) 
       {
         speednum = 0;
@@ -347,11 +351,11 @@ void loop () {
       speednum++;
       if(speednum < 100)
       {
-        speed2--;
+        speed2++;
       }
       else
       {
-        speed2++;
+        speed2--;
         if(speed2 >= originSpeed2)
         {
           speed2 = originSpeed2;
@@ -366,11 +370,11 @@ void loop () {
       speednum++;
       if(speednum < 100)
       {
-        speed1--;
+        speed1++;
       }        
       else
       {
-        speed1++;
+        speed1--;
         if(speed1 >= originSpeed1)
         {
           speed1 = originSpeed1;
@@ -384,7 +388,7 @@ void loop () {
     case 4:      //後退
       speednum++;
       speed1--;
-      speed2--;
+      speed2++;
       if(speednum >= 100) 
       {
         speednum = 0;
@@ -422,10 +426,10 @@ void loop () {
     case 6:      //下潛
       speednum++;
       speed3++;
-      speed4++;
+      speed4--;
       speed5++;
-      speed6++;
-      if(speednum >= 100) 
+      speed6--;
+      if(speednum >= 50)
       {
         speednum = 0;
         control = 0;
@@ -436,16 +440,27 @@ void loop () {
     case 7:      //上升
       speednum++;
       speed3--;
-      speed4--;
+      speed4++;
       speed5--;
-      speed6--;
-      if(speednum >= 100) 
+      speed6++;
+      if(speednum >= 50) 
       {
         speednum = 0;
         control = 0;
         actioncomplete = true;
       }
       break;
+  }
+
+  if(!stableStart)
+  {
+    myServo1.writeMicroseconds(speed1);
+    myServo2.writeMicroseconds(speed2);
+    myServo3.writeMicroseconds(speed3);
+    myServo4.writeMicroseconds(speed4);
+    myServo5.writeMicroseconds(speed5);
+    myServo6.writeMicroseconds(speed6);
+    delay(10);
   }
 
   if (!dmpReady) return;
@@ -469,43 +484,43 @@ void loop () {
         if((ypr[1] * 180/M_PI)>30)
         {
           Serial.println("馬達轉動!");
-          speed3--;
+          speed3++;
           speed4--;
           speed5++;
-          speed6++;
+          speed6--;
         }
         if((ypr[1] * 180/M_PI)<-30)
         {
           Serial.println("馬達轉動!");
-          speed3++;
+          speed3--;
           speed4++;
           speed5--;
-          speed6--;
+          speed6++;
         }
         if((ypr[2] * 180/M_PI)>30)
         {
           Serial.println("馬達轉動!");
-          speed3--;
+          speed3++;
           speed5--;
           speed4++;
-          speed6++;
+          speed6--;
         }
         if((ypr[2] * 180/M_PI)<-30)
         {
           Serial.println("馬達轉動!");
-          speed3++;
+          speed3--;
           speed5++;
           speed4--;
-          speed6--;
+          speed6++;
         }
+        myServo1.writeMicroseconds(speed1);
+        myServo2.writeMicroseconds(speed2);
+        myServo3.writeMicroseconds(speed3);
+        myServo4.writeMicroseconds(speed4);
+        myServo5.writeMicroseconds(speed5);
+        myServo6.writeMicroseconds(speed6);
+        delay(10);
       }
     #endif    
   }
-  myServo1.writeMicroseconds(speed1);
-  myServo2.writeMicroseconds(speed2);
-  myServo3.writeMicroseconds(speed3);
-  myServo4.writeMicroseconds(speed4);
-  myServo5.writeMicroseconds(speed5);
-  myServo6.writeMicroseconds(speed6);
-  delay(10);
 }
