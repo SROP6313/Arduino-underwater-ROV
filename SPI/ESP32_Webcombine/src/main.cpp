@@ -174,7 +174,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       
       body {
         font-family: Arial;
-        text-transform: capitalize;
       }
                 
       .progress {
@@ -350,7 +349,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     </div>
     <div class="btn-group4">
     <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
-    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('reset');"><span>重置MEGA</span></button>
+    <button class="buttonStb" style="vertical-align:middle" ondblclick="toggleCheckbox('reset');"><span>重置陀螺儀(雙擊)</span></button>
     </div>
     <p><br></p>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -459,7 +458,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       warnhttp.send();
     }
 
-    function Clock() {      //顯示時間的函數
+  /*   function Clock() {      //顯示時間的函數
       var date = new Date();
       this.year = date.getFullYear();
       this.month = date.getMonth() + 1;
@@ -484,7 +483,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       };
     }
     var clock = new Clock();
-    clock.display(document.getElementById("clock"));
+    clock.display(document.getElementById("clock")); */
     
     var index;
     
