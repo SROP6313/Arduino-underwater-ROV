@@ -178,7 +178,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
                 
       .progress {
         position: absolute;
-        top: 860px;
+        top: 820px;
         width: 0%;
         height: 10px;
         background-color: #2183DD;
@@ -311,7 +311,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
-    <h3 id="clock" style="font-family:Microsoft JhengHei;"></h3>
     <ul>
       <li><a href="#photo">水下影像</a></li>
       <li><a href="#control">控制</a></li>
@@ -554,7 +553,7 @@ static esp_err_t index_handler(httpd_req_t *req){
   return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
 }
 
-volatile byte m_send;   //中斷要改變的值設為 volatile
+byte m_send;   //中斷要改變的值設為 volatile
 
 static esp_err_t cmd_handler(httpd_req_t *req){
   char*  buf;
@@ -716,6 +715,9 @@ void setup () {
   Wire.begin(I2C_SDA, I2C_SCL);
   
   // Wi-Fi connection
+  WiFi.setSleep(false);
+  WiFi.mode (WIFI_STA);
+
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -778,13 +780,13 @@ void loop () {
   }
 
   SPIsendnum++;
-  if(SPIsendnum >= 100)
+  if(SPIsendnum >= 25)
   {
     SPIsendnum = 0;
     char c = m_send;
     digitalWrite(SS, LOW); // enable Slave Select
     m_receive = SPI.transfer(c);
-    Serial.println(m_receive);
     m_send = 0;
   }
+  delay(1);
 }
