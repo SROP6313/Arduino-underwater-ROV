@@ -14,7 +14,7 @@
 MPU6050 mpu;
 Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵機對象來控制電調
 
-#define ResetPin 13
+#define ResetPin 28
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
