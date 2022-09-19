@@ -157,7 +157,8 @@ int speed1 = 1475, speed2 = 1475, speed3 = 1475, speed4 = 1475, speed5 = 1475, s
 int originSpeed1, originSpeed2;
 int control = 0;
 int speednum = 0; 
-int steppernum = 0;
+int stepperhandnum = 1;    //(最鬆)1----5(最緊)  初始為最鬆!!!!!!!
+int stepperUpDownnum = 5;  //(最高)5----1(最低)  初始為最高!!!!!!!
 int speedlimit = 0;
 byte speedstatus = 5;  // 5 = stop
 
@@ -231,72 +232,89 @@ void loop () {
       stableStart = true;
       control = 0;
     }
-    else if (s_received == 'h')  // hand
+    else if (s_received == 'h')  // hold 一次0.5cm
     {
       Serial.println("收到h命令");
-      noInterrupts();
-      //stableStart = 0;
-      actioncomplete = false;
-      if(steppernum == 0)
+      if(stepperhandnum < 5)
       {
-        digitalWrite(dirPin1,HIGH);
+        noInterrupts();
+        stepperhandnum++;
+        stableStart = false;
+        actioncomplete = false;
+        digitalWrite(dirPin1,LOW);  //步進馬達上下降
         for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
         {
           digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(1000);
+          delayMicroseconds(2000);
           digitalWrite(stepPin1,LOW);
-          delayMicroseconds(1000);
+          delayMicroseconds(2000);
         }
-        steppernum = 1;
+        actioncomplete = true;
+        interrupts();
       }
-      else
+    }
+    else if (s_received == 'm')  // release
+    {
+      Serial.println("收到m命令");
+      if(stepperhandnum > 1)
       {
-        digitalWrite(dirPin1,LOW);
+        noInterrupts();
+        stepperhandnum--;
+        stableStart = false;
+        actioncomplete = false;
+        digitalWrite(dirPin1,HIGH);  //步進馬達上升
         for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
         {
           digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(1000);
+          delayMicroseconds(2000);
           digitalWrite(stepPin1,LOW);
-          delayMicroseconds(1000);
+          delayMicroseconds(2000);
         }
-        steppernum = 0;
-      } 
-      actioncomplete = true;
-      interrupts();
+        actioncomplete = true;
+        interrupts();
+      }
     }
-    else if (s_received == 'a')  // armup
+    else if (s_received == 'a')  // armup 一次0.5cm
     {
       Serial.println("收到a命令");
-      noInterrupts();
-      stableStart = false;
-      actioncomplete = false;
-      digitalWrite(dirPin1,HIGH);
-      for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
+      if(stepperUpDownnum < 5)
       {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(1000);
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(1000);
+        noInterrupts();
+        stepperUpDownnum++;
+        stableStart = false;
+        actioncomplete = false;
+        digitalWrite(dirPin1,HIGH);  //步進馬達上升
+        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
+        {
+          digitalWrite(stepPin1,HIGH);
+          delayMicroseconds(2000);
+          digitalWrite(stepPin1,LOW);
+          delayMicroseconds(2000);
+        }
+        actioncomplete = true;
+        interrupts();
       }
-      actioncomplete = true;
-      interrupts();
     }
     else if (s_received == 'q')  // armdown
     {
       Serial.println("收到q命令");
-      noInterrupts();
-      stableStart = false;
-      actioncomplete = false;
-      digitalWrite(dirPin1,LOW);
-      for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
+      if(stepperUpDownnum > 1)
       {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(1000);
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(1000);
+        noInterrupts();
+        stepperUpDownnum--;
+        stableStart = false;
+        actioncomplete = false;
+        digitalWrite(dirPin1,LOW);  //步進馬達下降
+        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
+        {
+          digitalWrite(stepPin1,HIGH);
+          delayMicroseconds(2000);
+          digitalWrite(stepPin1,LOW);
+          delayMicroseconds(2000);
+        }
+        actioncomplete = true;
+        interrupts();
       }
-      actioncomplete = true;
-      interrupts();
     }
     else if (s_received == 'd')  // dive
     {
