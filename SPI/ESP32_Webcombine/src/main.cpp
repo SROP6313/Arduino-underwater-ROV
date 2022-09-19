@@ -112,7 +112,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         background-color: #d4aa5c;
         border: 1px solid white;
         color: white;
-        padding: 15px 15px;
+        padding: 15px 1px;
         text-align: center;
         text-decoration: none;
         display: inline-block;
@@ -120,7 +120,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         cursor: pointer;
         float: left;
         transition-duration: 0.4s;
-        width: 33.333%;
+        width: 25%;
         font-family:Microsoft JhengHei;
       }
       .btn-group4 .buttonStb {
@@ -342,7 +342,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonRsDv" onclick="toggleCheckbox('dive');">下潛</button>
     </div>
     <div class="btn-group2">
-      <button class="buttonHdAm" onclick="toggleCheckbox('hand');">夾爪</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('hold');">抓住</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('release');">放開</button>
       <button class="buttonHdAm" onclick="toggleCheckbox('armup');">手臂抬升</button>
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
@@ -398,11 +399,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     window.onload = document.getElementById("photo").src = window.location.href.slice(0, -1) + ":81/stream";
 
     setInterval(function() {
-    // Call a function repetatively with 2 Second interval
       getTemper();
       getPressure();
       getSpeedstatus();
-    }, 50); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
+    }, 500); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
     setInterval(function() {
       getWarn();
     }, 3000);
@@ -611,9 +611,13 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     Serial.println("s");
     m_send = 's';
   }
-  else if(!strcmp(variable, "hand")) {
+  else if(!strcmp(variable, "hold")) {
     Serial.println("h");
     m_send = 'h';
+  }
+  else if(!strcmp(variable, "release")) {
+    Serial.println("m");
+    m_send = 'm';
   }
   else if(!strcmp(variable, "armup")) {
     Serial.println("a");
@@ -750,7 +754,6 @@ int SPIsendnum = 0;
 
 void loop () {
   server.handleClient();
-  delay(1);
   // Serial.print("WiFi RSSI:");
   // Serial.println(WiFi.RSSI()); //讀取WiFi強度
 
@@ -788,5 +791,4 @@ void loop () {
     m_receive = SPI.transfer(c);
     m_send = 0;
   }
-  delay(1);
 }
