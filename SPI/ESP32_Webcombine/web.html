@@ -77,7 +77,7 @@
         background-color: #d4aa5c;
         border: 1px solid white;
         color: white;
-        padding: 15px 15px;
+        padding: 15px 1px;
         text-align: center;
         text-decoration: none;
         display: inline-block;
@@ -85,7 +85,7 @@
         cursor: pointer;
         float: left;
         transition-duration: 0.4s;
-        width: 33.333%;
+        width: 25%;
         font-family:Microsoft JhengHei;
       }
       .btn-group4 .buttonStb {
@@ -143,7 +143,7 @@
                 
       .progress {
         position: absolute;
-        top: 860px;
+        top: 820px;
         width: 0%;
         height: 10px;
         background-color: #2183DD;
@@ -276,7 +276,6 @@
       }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
-    <h3 id="clock" style="font-family:Microsoft JhengHei;"></h3>
     <ul>
       <li><a href="#photo">水下影像</a></li>
       <li><a href="#control">控制</a></li>
@@ -308,7 +307,8 @@
       <button class="buttonRsDv" onclick="toggleCheckbox('dive');">下潛</button>
     </div>
     <div class="btn-group2">
-      <button class="buttonHdAm" onclick="toggleCheckbox('hand');">夾爪</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('hold');">抓住</button>
+      <button class="buttonHdAm" onclick="toggleCheckbox('release');">放開</button>
       <button class="buttonHdAm" onclick="toggleCheckbox('armup');">手臂抬升</button>
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
@@ -364,11 +364,10 @@
     window.onload = document.getElementById("photo").src = window.location.href.slice(0, -1) + ":81/stream";
 
     setInterval(function() {
-    // Call a function repetatively with 2 Second interval
       getTemper();
       getPressure();
       getSpeedstatus();
-    }, 50); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
+    }, 500); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
     setInterval(function() {
       getWarn();
     }, 3000);
