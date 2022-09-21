@@ -401,12 +401,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     setInterval(function() {
       getTemper();
       getPressure();
-      getSpeedstatus();
     }, 500); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
     setInterval(function() {
       getWarn();
     }, 3000);
     setInterval(function(){
+      getSpeedstatus();
       sampleClick();
     },500);
    
@@ -456,33 +456,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       warnhttp.open("GET", "readWarn", true);
       warnhttp.send();
     }
-
-  /*   function Clock() {      //顯示時間的函數
-      var date = new Date();
-      this.year = date.getFullYear();
-      this.month = date.getMonth() + 1;
-      this.date = date.getDate();
-      this.day = new Array("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")[date.getDay()];
-      this.hour = date.getHours() 
-      this.minute = date.getMinutes() 
-      this.second = date.getSeconds() 
-      this.toString = function() {
-      return this.year + "年" + this.month + "月" + this.date + "日 " + this.hour + ":" + this.minute + ":" + this.second + " " + this.day;
-      };
-      this.toSimpleDate = function() {
-      return this.year + "-" + this.month + "-" + this.date;
-      };
-      this.toDetailDate = function() {
-      return this.year + "-" + this.month + "-" + this.date + " " + this.hour + ":" + this.minute + ":" + this.second;
-      };
-      this.display = function(ele) {
-      var clock = new Clock();
-      ele.innerHTML = clock.toString();
-      window.setTimeout(function() {clock.display(ele);}, 1000);
-      };
-    }
-    var clock = new Clock();
-    clock.display(document.getElementById("clock")); */
     
     var index;
     
@@ -767,7 +740,7 @@ void loop () {
   }
 
   sensernum++;
-  if(sensernum >= 110)
+  if(sensernum >= 250)
   {
     sensernum = 0;
     sensor.read();   //函式裡有 delay 40 ms
@@ -776,7 +749,7 @@ void loop () {
     // Serial.println(" deg C");
     tempera = sensor.temperature();
     pressu = sensor.pressure();
-    // Serial.println(tempera);
+    //Serial.println(tempera);
     temperature = String(tempera,2);
     pressure = String(pressu,2);
     //Serial.println(WiFi.RSSI());
