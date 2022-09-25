@@ -3,6 +3,7 @@
 #include <string.h>
 #include <Wire.h>
 #include <Servo.h>
+#include <Stepper.h>
 
 #include "I2Cdev.h"  
 #include "MPU6050_6Axis_MotionApps20.h"
@@ -18,10 +19,12 @@ Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵�
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 
-#define dirPin1 2
-#define stepPin1 3
-#define dirPin2 4
-#define stepPin2 5
+// Define number of steps per revolution:
+const int stepsPerRevolution = 200;
+
+// Initialize the stepper library on pins 8 through 11:
+Stepper myStepper1 = Stepper(stepsPerRevolution, 2, 3, 4, 5);  //步進馬達腳位
+Stepper myStepper2 = Stepper(stepsPerRevolution, 38, 36, 34, 32);
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -50,7 +53,7 @@ String command;
 volatile boolean process;
 
 void setup () {
-  Serial.begin (115200);
+  Serial.begin (9600);
   digitalWrite(ResetPin, HIGH); // Set digital pin to 5V
   pinMode(ResetPin, OUTPUT); // Set the digital pin to an OUTPUT pin
 
@@ -79,10 +82,9 @@ void setup () {
   myServo5.writeMicroseconds(1475);
   myServo6.writeMicroseconds(1475);
 
-  pinMode(dirPin1,OUTPUT);   // 步進馬達腳位
-  pinMode(stepPin1,OUTPUT);
-  pinMode(dirPin2,OUTPUT);
-  pinMode(stepPin2,OUTPUT);
+  // Set the motor speed (RPMs):
+  myStepper1.setSpeed(100);
+  myStepper2.setSpeed(100);
 
   Wire.begin(2);
   Wire.setClock(400000);
@@ -161,6 +163,7 @@ int stepperhandnum = 1;    //(最鬆)1----5(最緊)  初始為最鬆!!!!!!!
 int stepperUpDownnum = 5;  //(最高)5----1(最低)  初始為最高!!!!!!!
 int speedlimit = 0;
 byte speedstatus = 5;  // 5 = stop
+float previousangle = 10.00;
 
 void loop () {
   if (process && actioncomplete) {
@@ -237,20 +240,11 @@ void loop () {
       Serial.println("收到h命令");
       if(stepperhandnum < 5)
       {
-        noInterrupts();
         stepperhandnum++;
         stableStart = false;
         actioncomplete = false;
-        digitalWrite(dirPin1,LOW);  //步進馬達上下降
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
-        {
-          digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(2000);
-          digitalWrite(stepPin1,LOW);
-          delayMicroseconds(2000);
-        }
+        myStepper1.step(500);
         actioncomplete = true;
-        interrupts();
       }
     }
     else if (s_received == 'm')  // release
@@ -258,20 +252,11 @@ void loop () {
       Serial.println("收到m命令");
       if(stepperhandnum > 1)
       {
-        noInterrupts();
         stepperhandnum--;
         stableStart = false;
         actioncomplete = false;
-        digitalWrite(dirPin1,HIGH);  //步進馬達上升
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
-        {
-          digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(2000);
-          digitalWrite(stepPin1,LOW);
-          delayMicroseconds(2000);
-        }
+        myStepper1.step(-500);
         actioncomplete = true;
-        interrupts();
       }
     }
     else if (s_received == 'a')  // armup 一次0.5cm
@@ -279,20 +264,11 @@ void loop () {
       Serial.println("收到a命令");
       if(stepperUpDownnum < 5)
       {
-        noInterrupts();
         stepperUpDownnum++;
         stableStart = false;
         actioncomplete = false;
-        digitalWrite(dirPin1,HIGH);  //步進馬達上升
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
-        {
-          digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(2000);
-          digitalWrite(stepPin1,LOW);
-          delayMicroseconds(2000);
-        }
+        myStepper2.step(-500);
         actioncomplete = true;
-        interrupts();
       }
     }
     else if (s_received == 'q')  // armdown
@@ -300,20 +276,11 @@ void loop () {
       Serial.println("收到q命令");
       if(stepperUpDownnum > 1)
       {
-        noInterrupts();
         stepperUpDownnum--;
         stableStart = false;
         actioncomplete = false;
-        digitalWrite(dirPin1,LOW);  //步進馬達下降
-        for(int i=0; i<500; i++)    // i=500 步進馬達轉 1s
-        {
-          digitalWrite(stepPin1,HIGH);
-          delayMicroseconds(2000);
-          digitalWrite(stepPin1,LOW);
-          delayMicroseconds(2000);
-        }
+        myStepper2.step(500);
         actioncomplete = true;
-        interrupts();
       }
     }
     else if (s_received == 'd')  // dive
@@ -443,8 +410,8 @@ void loop () {
 
     case 6:      //下潛
       speednum++;
-      speed3++;
-      speed4--;
+      speed3--;
+      speed4++;
       speed5++;
       speed6--;
       if(speednum >= 50)
@@ -457,8 +424,8 @@ void loop () {
 
     case 7:      //上升
       speednum++;
-      speed3--;
-      speed4++;
+      speed3++;
+      speed4--;
       speed5--;
       speed6++;
       if(speednum >= 50) 
@@ -470,8 +437,28 @@ void loop () {
       break;
   }
 
+  if(speed3>1675) speed3 = 1675;
+  if(speed3<1275) speed3 = 1275;
+  if(speed4>1675) speed4 = 1675;
+  if(speed4<1275) speed4 = 1275;
+  if(speed5>1675) speed5 = 1675;
+  if(speed5<1275) speed5 = 1275;
+  if(speed6>1675) speed6 = 1675;
+  if(speed6<1275) speed6 = 1275;
+
   if(!stableStart)
   {
+    Serial.print(speed1);
+    Serial.print("  ");
+    Serial.print(speed2);
+    Serial.print("  ");
+    Serial.print(speed3);
+    Serial.print("  ");
+    Serial.print(speed4);
+    Serial.print("  ");
+    Serial.print(speed5);
+    Serial.print("  ");
+    Serial.println(speed6);
     myServo1.writeMicroseconds(speed1);
     myServo2.writeMicroseconds(speed2);
     myServo3.writeMicroseconds(speed3);
@@ -481,7 +468,7 @@ void loop () {
     delay(10);
   }
 
-  if (!dmpReady) return;
+  if (!dmpReady) return;  //若 MPU6050 沒準備好就不會執行以下程式
     // read a packet from FIFO
     
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) { // Get the Latest packet 
@@ -497,40 +484,44 @@ void loop () {
       Serial.print(ypr[1] * 180/M_PI);
       Serial.print("\t");
       Serial.println(ypr[2] * 180/M_PI);
-      if(stableStart == true)
+      if(stableStart)
       {
-        if((ypr[1] * 180/M_PI)>30)
+        if(abs(ypr[1]*180/M_PI) >= 10)
         {
-          Serial.println("馬達轉動!");
-          speed3++;
-          speed4--;
-          speed5++;
-          speed6--;
+          if(abs(ypr[1]*180/M_PI) >= previousangle && (ypr[1]*180/M_PI) < 0)   //向前傾斜
+          {
+            //Serial.println("馬達轉動!");
+            if(speed3>1275) speed3--;
+            if(speed4<1675) speed4++;
+            if(speed5>1275) speed5--;
+            if(speed6<1675) speed6++;
+          }
+          else if(abs(ypr[1]*180/M_PI) >= previousangle && (ypr[1]*180/M_PI) > 0)   //向後傾斜
+          {
+            //Serial.println("馬達轉動!");
+            if(speed3<1675) speed3++;
+            if(speed4>1275) speed4--;
+            if(speed5<1675) speed5++;
+            if(speed6>1275) speed6--;
+          }
+          previousangle = abs(ypr[1]*180/M_PI);
         }
-        if((ypr[1] * 180/M_PI)<-30)
+        else
         {
-          Serial.println("馬達轉動!");
-          speed3--;
-          speed4++;
-          speed5--;
-          speed6++;
+          previousangle = 10.00;
         }
-        if((ypr[2] * 180/M_PI)>30)
-        {
-          Serial.println("馬達轉動!");
-          speed3++;
-          speed5--;
-          speed4++;
-          speed6--;
-        }
-        if((ypr[2] * 180/M_PI)<-30)
-        {
-          Serial.println("馬達轉動!");
-          speed3--;
-          speed5++;
-          speed4--;
-          speed6++;
-        }
+        
+        Serial.print(speed1);
+        Serial.print("  ");
+        Serial.print(speed2);
+        Serial.print("  ");
+        Serial.print(speed3);
+        Serial.print("  ");
+        Serial.print(speed4);
+        Serial.print("  ");
+        Serial.print(speed5);
+        Serial.print("  ");
+        Serial.println(speed6);
         myServo1.writeMicroseconds(speed1);
         myServo2.writeMicroseconds(speed2);
         myServo3.writeMicroseconds(speed3);
@@ -539,6 +530,6 @@ void loop () {
         myServo6.writeMicroseconds(speed6);
         delay(10);
       }
-    #endif    
+    #endif
   }
 }
