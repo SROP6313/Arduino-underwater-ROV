@@ -24,6 +24,6 @@ Purpose: Users can use the HTML UI built by ESP32(CAM) webserver to control moto
 ## Webpage view <I>(last edit : 09/25/2022)</I>
 |||
 | ---------- | -----------|
-|![圖片](https://user-images.githubusercontent.com/103128273/192151084-f5743413-4943-4352-8563-820e01b11b55.png) | ![圖片](https://user-images.githubusercontent.com/103128273/192151134-56887f26-6c46-42ef-ae0a-531939f0cccb.png)|
+|![圖片](https://user-images.githubusercontent.com/103128273/192151322-a2e207d8-0ee8-4865-90b2-8b8513110270.png) | ![圖片](https://user-images.githubusercontent.com/103128273/192151134-56887f26-6c46-42ef-ae0a-531939f0cccb.png)|
 
 Explanation: The webpage show the `hyperlink buttons`, `ip camera stream from ESP32-CAM`, `ROV operating buttons`, `current rotating speed status of ROV thrusters` and `sensor values`.
