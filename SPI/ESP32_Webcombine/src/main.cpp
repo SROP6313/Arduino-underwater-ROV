@@ -401,7 +401,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     setInterval(function() {
       getTemper();
       getPressure();
-    }, 500); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
+    }, 2000); //1ms update rate 太短可能導致按鈕失靈(經測試50不錯)
     setInterval(function() {
       getWarn();
     }, 3000);
@@ -478,7 +478,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
           const currentStep = this.currentStep
           const currentIndex = steps.indexOf(currentStep)
           if (steps[index]) {
-            return this.currentStep = steps[index]
+            if(index >= 0 && index <=5)
+            {
+              return this.currentStep = steps[index]
+            }
           }
 
           this.currentStep = { "label": "complete" }
@@ -756,12 +759,13 @@ void loop () {
   }
 
   SPIsendnum++;
-  if(SPIsendnum >= 25)
+  if(SPIsendnum >= 100)
   {
     SPIsendnum = 0;
     char c = m_send;
     digitalWrite(SS, LOW); // enable Slave Select
     m_receive = SPI.transfer(c);
     m_send = 0;
+    Serial.println(m_receive);
   }
 }
