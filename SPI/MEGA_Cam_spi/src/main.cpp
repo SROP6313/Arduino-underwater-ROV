@@ -17,6 +17,11 @@ Servo myServo1, myServo2, myServo3, myServo4, myServo5, myServo6; // 創建舵�
 
 #define ResetPin 28
 
+#define voltPin A0  //assigns the voltage input pin
+
+int readValue; //value received from the voltPin
+float voltage; //declare the voltage variable
+
 #define OUTPUT_READABLE_YAWPITCHROLL
 
 // Define number of steps per revolution:
@@ -56,7 +61,7 @@ void setup () {
   Serial.begin (9600);
   digitalWrite(ResetPin, HIGH); // Set digital pin to 5V
   pinMode(ResetPin, OUTPUT); // Set the digital pin to an OUTPUT pin
-
+  pinMode(voltPin, INPUT); //input variable dc voltage
   pinMode(MISO, OUTPUT); // have to send on master in so it set as output
   SPCR |= _BV(SPE); // turn on SPI in slave mode
   process = false;
@@ -163,7 +168,10 @@ int stepperhandnum = 1;    //(最鬆)1----5(最緊)  初始為最鬆!!!!!!!
 int stepperUpDownnum = 5;  //(最高)5----1(最低)  初始為最高!!!!!!!
 int speedlimit = 0;
 byte speedstatus = 5;  // 5 = stop
-float previousangle = 10.00;
+float FBpreviousangle = 7.00;
+float RLpreviousangle = 7.00;
+long TimeoutCount = 0;
+long VoltageCount = 0;
 
 void loop () {
   if (process && actioncomplete) {
@@ -186,24 +194,29 @@ void loop () {
       }
       stableStart = false;          
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if(s_received == 'l')  // left
     {
       Serial.println("收到l命令");
       control = 2;
+      originSpeed1 = speed1;
       originSpeed2 = speed2;
       stableStart = false;
       actioncomplete = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if(s_received== 'r')  // right
     {
       Serial.print("收到r命令");
       control = 3;
       originSpeed1 = speed1;
+      originSpeed2 = speed2;
       stableStart = false;
       actioncomplete = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if(s_received == 'b')  // backward
     {
@@ -220,6 +233,7 @@ void loop () {
       }
       stableStart = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if (s_received == 't')  // stop
     {
@@ -228,12 +242,14 @@ void loop () {
       stableStart = false;
       actioncomplete = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if (s_received == 's')  // stable
     {
       Serial.print("收到s命令");
       stableStart = true;
       control = 0;
+      TimeoutCount = 0;
     }
     else if (s_received == 'h')  // hold 一次0.5cm
     {
@@ -246,6 +262,7 @@ void loop () {
         myStepper1.step(500);
         actioncomplete = true;
       }
+      TimeoutCount = 0;
     }
     else if (s_received == 'm')  // release
     {
@@ -258,6 +275,7 @@ void loop () {
         myStepper1.step(-500);
         actioncomplete = true;
       }
+      TimeoutCount = 0;
     }
     else if (s_received == 'a')  // armup 一次0.5cm
     {
@@ -270,6 +288,7 @@ void loop () {
         myStepper2.step(-500);
         actioncomplete = true;
       }
+      TimeoutCount = 0;
     }
     else if (s_received == 'q')  // armdown
     {
@@ -282,6 +301,7 @@ void loop () {
         myStepper2.step(500);
         actioncomplete = true;
       }
+      TimeoutCount = 0;
     }
     else if (s_received == 'd')  // dive
     {
@@ -290,6 +310,7 @@ void loop () {
       stableStart = false;
       actioncomplete = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if (s_received == 'e')  // rise
     {
@@ -298,6 +319,7 @@ void loop () {
       stableStart = false;
       actioncomplete = false;
       speednum = 0;
+      TimeoutCount = 0;
     }
     else if (s_received == 'x')  // reset Mega board
     {
@@ -337,13 +359,14 @@ void loop () {
       if(speednum < 100)
       {
         speed2++;
+        speed1++;
       }
       else
       {
-        speed2--;
-        if(speed2 >= originSpeed2)
+        if(speed2 > originSpeed2) speed2--;
+        if(speed1 > originSpeed1) speed1--;
+        if(speed2 == originSpeed2 && speed1 == originSpeed1)
         {
-          speed2 = originSpeed2;
           speednum = 0;
           control = 0;
           actioncomplete = true;
@@ -355,14 +378,15 @@ void loop () {
       speednum++;
       if(speednum < 100)
       {
-        speed1++;
+        speed1--;
+        speed2--;
       }        
       else
       {
-        speed1--;
-        if(speed1 >= originSpeed1)
+        if(speed2 < originSpeed2) speed2++;
+        if(speed1 < originSpeed1) speed1++;
+        if(speed2 == originSpeed2 && speed1 == originSpeed1)
         {
-          speed1 = originSpeed1;
           speednum = 0;
           control = 0;
           actioncomplete = true;
@@ -437,6 +461,30 @@ void loop () {
       break;
   }
 
+  TimeoutCount++;
+  if(TimeoutCount > 500)  // 20 second
+  {
+    speed3++;
+    speed4--;
+    speed5--;
+    speed6++;
+  }
+
+  VoltageCount++;
+  if(VoltageCount > 250)
+  {
+    VoltageCount = 0;
+    int readValue = analogRead(voltPin); //read pin A0 value
+    voltage = readValue * (5.0 / 1023.0)*4; //calculates real world voltage
+    if(voltage <= 14.4) SPDR = 'w';
+    Serial.print("Voltage = "); //show “voltage before value on serial monitor
+    Serial.println(voltage); //show value on serial monitor
+  }
+  
+  if(speed1>1775) speed1 = 1775;
+  if(speed1<1175) speed1 = 1175;
+  if(speed2>1775) speed2 = 1775;
+  if(speed2<1175) speed2 = 1175;
   if(speed3>1675) speed3 = 1675;
   if(speed3<1275) speed3 = 1275;
   if(speed4>1675) speed4 = 1675;
@@ -478,39 +526,72 @@ void loop () {
       mpu.dmpGetQuaternion(&q, fifoBuffer);
       mpu.dmpGetGravity(&gravity, &q);
       mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-      Serial.print("ypr\t");
-      Serial.print(ypr[0] * 180/M_PI);
-      Serial.print("\t");
-      Serial.print(ypr[1] * 180/M_PI);
-      Serial.print("\t");
-      Serial.println(ypr[2] * 180/M_PI);
+      // Serial.print("ypr\t");
+      // Serial.print(ypr[0] * 180/M_PI);
+      // Serial.print("\t");
+      // Serial.print(ypr[1] * 180/M_PI);
+      // Serial.print("\t");
+      // Serial.println(ypr[2] * 180/M_PI);
       if(stableStart)
       {
-        if(abs(ypr[1]*180/M_PI) >= 10)
+        if(abs(ypr[1]*180/M_PI) >= 7)
         {
-          if(abs(ypr[1]*180/M_PI) >= previousangle && (ypr[1]*180/M_PI) < 0)   //向前傾斜
+          if(abs(ypr[1]*180/M_PI) >= FBpreviousangle && (ypr[1]*180/M_PI) < 0)   //向前傾斜
           {
-            //Serial.println("馬達轉動!");
             if(speed3>1275) speed3--;
             if(speed4<1675) speed4++;
             if(speed5>1275) speed5--;
             if(speed6<1675) speed6++;
           }
-          else if(abs(ypr[1]*180/M_PI) >= previousangle && (ypr[1]*180/M_PI) > 0)   //向後傾斜
+          else if(abs(ypr[1]*180/M_PI) >= FBpreviousangle && (ypr[1]*180/M_PI) > 0)   //向後傾斜
           {
-            //Serial.println("馬達轉動!");
             if(speed3<1675) speed3++;
             if(speed4>1275) speed4--;
             if(speed5<1675) speed5++;
             if(speed6>1275) speed6--;
           }
-          previousangle = abs(ypr[1]*180/M_PI);
+          FBpreviousangle = abs(ypr[1]*180/M_PI);
         }
         else
         {
-          previousangle = 10.00;
+          FBpreviousangle = 7.00;
         }
         
+        if(abs(ypr[2]*180/M_PI) >= 7)
+        {
+          if(abs(ypr[2]*180/M_PI) >= RLpreviousangle && (ypr[2]*180/M_PI) < 0)   //向左傾斜
+          {
+            if(speed3>1275) speed3--;
+            if(speed4<1675) speed4--;
+            if(speed5>1275) speed5++;
+            if(speed6<1675) speed6++;
+          }
+          else if(abs(ypr[2]*180/M_PI) >= RLpreviousangle && (ypr[2]*180/M_PI) > 0)   //向右傾斜
+          {
+            if(speed3<1675) speed3++;
+            if(speed4>1275) speed4++;
+            if(speed5<1675) speed5--;
+            if(speed6>1275) speed6--;
+          }
+          RLpreviousangle = abs(ypr[2]*180/M_PI);
+        }
+        else
+        {
+          RLpreviousangle = 7.00;
+        }
+
+        if(abs(ypr[1]*180/M_PI) < 7 && abs(ypr[2]*180/M_PI) < 7)
+        {
+          if(speed3 > 1475) speed3--;
+          if(speed3 < 1475) speed3++;
+          if(speed4 > 1475) speed4--;
+          if(speed4 < 1475) speed4++;
+          if(speed5 > 1475) speed5--;
+          if(speed5 < 1475) speed5++;
+          if(speed6 > 1475) speed6--;
+          if(speed6 < 1475) speed6++;
+        }
+
         Serial.print(speed1);
         Serial.print("  ");
         Serial.print(speed2);
