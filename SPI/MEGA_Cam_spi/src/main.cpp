@@ -471,12 +471,18 @@ void loop () {
   }
 
   VoltageCount++;
-  if(VoltageCount > 250)
+  if(VoltageCount > 1000)     //注意：AO的線要在GND線旁的電阻!!!
   {
     VoltageCount = 0;
     int readValue = analogRead(voltPin); //read pin A0 value
     voltage = readValue * (5.0 / 1023.0)*4; //calculates real world voltage
-    if(voltage <= 14.4) SPDR = 'w';
+
+    if(voltage > 16.0) SPDR = 'y';  //100%
+    else if(voltage <= 16.0 && voltage > 15.6) SPDR = 'u';  //80%
+    else if(voltage <= 15.6 && voltage > 15.2) SPDR = 'i';  //60%
+    else if(voltage <= 15.2 && voltage > 14.8) SPDR = 'o';  //40%
+    else if(voltage <= 14.8) SPDR = 'w';  //20%
+
     Serial.print("Voltage = "); //show “voltage before value on serial monitor
     Serial.println(voltage); //show value on serial monitor
   }
@@ -496,17 +502,17 @@ void loop () {
 
   if(!stableStart)
   {
-    Serial.print(speed1);
-    Serial.print("  ");
-    Serial.print(speed2);
-    Serial.print("  ");
-    Serial.print(speed3);
-    Serial.print("  ");
-    Serial.print(speed4);
-    Serial.print("  ");
-    Serial.print(speed5);
-    Serial.print("  ");
-    Serial.println(speed6);
+    // Serial.print(speed1);
+    // Serial.print("  ");
+    // Serial.print(speed2);
+    // Serial.print("  ");
+    // Serial.print(speed3);
+    // Serial.print("  ");
+    // Serial.print(speed4);
+    // Serial.print("  ");
+    // Serial.print(speed5);
+    // Serial.print("  ");
+    // Serial.println(speed6);
     myServo1.writeMicroseconds(speed1);
     myServo2.writeMicroseconds(speed2);
     myServo3.writeMicroseconds(speed3);
@@ -592,17 +598,17 @@ void loop () {
           if(speed6 < 1475) speed6++;
         }
 
-        Serial.print(speed1);
-        Serial.print("  ");
-        Serial.print(speed2);
-        Serial.print("  ");
-        Serial.print(speed3);
-        Serial.print("  ");
-        Serial.print(speed4);
-        Serial.print("  ");
-        Serial.print(speed5);
-        Serial.print("  ");
-        Serial.println(speed6);
+        // Serial.print(speed1);
+        // Serial.print("  ");
+        // Serial.print(speed2);
+        // Serial.print("  ");
+        // Serial.print(speed3);
+        // Serial.print("  ");
+        // Serial.print(speed4);
+        // Serial.print("  ");
+        // Serial.print(speed5);
+        // Serial.print("  ");
+        // Serial.println(speed6);
         myServo1.writeMicroseconds(speed1);
         myServo2.writeMicroseconds(speed2);
         myServo3.writeMicroseconds(speed3);
