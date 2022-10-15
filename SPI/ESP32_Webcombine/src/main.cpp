@@ -311,6 +311,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
+    <i id="battery" class='fa fa-battery-0' style="font-size:50px; position:absolute; top:27px; right:12px;"></i>
     <ul>
       <li><a href="#photo">水下影像</a></li>
       <li><a href="#control">控制</a></li>
@@ -320,7 +322,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     <iframe
       noresize="noresize"
       style="position: middle; background: transparent; width: 100%; height:320px;"
-      src="http://192.168.43.22/">
+      src="http://192.168.43.237/">
     </iframe>
     <div class="btn-group1">
       <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
@@ -409,6 +411,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       getSpeedstatus();
       sampleClick();
     },500);
+    setInterval(function(){
+      getBatstatus();
+    },9250);
    
     function sampleClick() {
       var btnX = document.getElementById("NS");
@@ -518,6 +523,41 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       };
       statushttp.open("GET", "readStatus", true);
       statushttp.send();
+    }
+    function getBatstatus() {
+      var batstatushttp = new XMLHttpRequest();
+      batstatushttp.onreadystatechange = function() {
+        if (batstatushttp.readyState == 4 && batstatushttp.status == 200){
+          var batteryvalue = parseInt(batstatushttp.responseText);
+          if(batteryvalue == 100)
+          {
+            document.getElementById("battery").className = "fa fa-battery-4";
+            document.getElementById("battery").style.color = "blue";
+          }  
+          else if(batteryvalue == 80) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-3";
+            document.getElementById("battery").style.color = "blue";
+          }
+          else if(batteryvalue == 60) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-2";
+            document.getElementById("battery").style.color = "blue";
+          }
+          else if(batteryvalue == 40) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-1";
+            document.getElementById("battery").style.color = "red";
+          }
+          else if(batteryvalue == 20) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-0";
+            document.getElementById("battery").style.color = "red";
+          }  
+        }
+      };
+      batstatushttp.open("GET", "readBatStatus", true);
+      batstatushttp.send();
     }
     </script>
   </body> 
@@ -681,7 +721,28 @@ void handleSpeedstatus(){
   server.send(200, "text/plane", Status);
 }
 
+String batteryvalue;
+void handleBatterystatus(){
+  String BatStatus = batteryvalue;
+  server.send(200, "text/plane", BatStatus);
+}
+
 MS5837 sensor;
+
+bool checkStringIsNumerical(String myString)  //檢查是數字還是字母
+{
+  uint16_t Numbers = 0;
+
+  for(uint16_t i = 0; i < myString.length(); i++)
+  {
+    if (myString[i] == '0' || myString[i] == '1' || myString[i] == '2' || myString[i] == '3' || myString[i] == '4' || myString[i] == '5' || myString[i] == '6' || myString[i] == '7' || myString[i] == '8' || myString[i] == '9')
+    {
+      Numbers ++;
+    }
+  }
+  if(Numbers == myString.length()) return true;
+  else return false;
+}
 
 void setup () {
   Serial.begin(115200); //set baud rate to 115200 for usart
@@ -714,6 +775,7 @@ void setup () {
   server.on("/readPressure", handlePressure);
   server.on("/readWarn", handleWarn);//To get update of RSSI only
   server.on("/readStatus", handleSpeedstatus);
+  server.on("/readBatStatus", handleBatterystatus);
   
   // Start streaming web server
   startCameraServer();
@@ -727,19 +789,24 @@ void setup () {
 float tempera, pressu;
 int sensernum = 0;
 int SPIsendnum = 0;
+long warnnum = 0;
 
 void loop () {
   server.handleClient();
   // Serial.print("WiFi RSSI:");
   // Serial.println(WiFi.RSSI()); //讀取WiFi強度
-
-  if(WiFi.RSSI()<(-70))     //RSSI小於-200跳警告
+  warnnum++;
+  if(warnnum >= 1000)
   {
-    w = 1;
-  }
-  else
-  {
-    w = 2;
+    warnnum = 0;
+    if(WiFi.RSSI()<(-200))     //RSSI小於-200跳警告
+    {
+      w = 1;
+    }
+    else
+    {
+      w = 2;
+    }
   }
 
   sensernum++;
@@ -765,6 +832,22 @@ void loop () {
     char c = m_send;
     digitalWrite(SS, LOW); // enable Slave Select
     m_receive = SPI.transfer(c);
+
+    if(m_receive == 'w') 
+    {
+      w = 3;
+      batteryvalue = 20;
+      Serial.println("20%");
+    }
+    else if(m_receive == 'o') batteryvalue = 40;
+    else if(m_receive == 'i') batteryvalue = 60;
+    else if(m_receive == 'u') batteryvalue = 80;
+    else if(m_receive == 'y') 
+    {
+      batteryvalue = 100;
+      Serial.println("100%");
+    }
+       
     m_send = 0;
     Serial.println(m_receive);
   }
