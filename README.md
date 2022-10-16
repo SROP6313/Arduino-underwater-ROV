@@ -21,9 +21,9 @@ Purpose: Users can use the HTML UI built by ESP32(CAM) webserver to control moto
 
 </div>
 
-## Webpage view <I>(last edit : 09/25/2022)</I>
+## Webpage view <I>(last edit : 10/16/2022)</I>
 |||
 | ---------- | -----------|
-|![圖片](https://user-images.githubusercontent.com/103128273/192151322-a2e207d8-0ee8-4865-90b2-8b8513110270.png) | ![圖片](https://user-images.githubusercontent.com/103128273/192151134-56887f26-6c46-42ef-ae0a-531939f0cccb.png)|
+| ![圖片](https://user-images.githubusercontent.com/103128273/196038210-581b000e-1f84-42a2-913f-999adfb38645.png) | ![圖片](https://user-images.githubusercontent.com/103128273/196038302-268e7ed4-bf36-401f-8699-525f38c08940.png)|
 
-Explanation: The webpage show the `hyperlink buttons`, `ip camera stream from ESP32-CAM`, `ROV operating buttons`, `current rotating speed status of ROV thrusters` and `sensor values`.
+Explanation: The webpage show the `battery voltage indicator icon`,`hyperlink buttons`, `ip camera stream from ESP32-CAM`, `ROV operating buttons`, `current rotating speed status of ROV thrusters` and `sensor values`. It also contain `Wi-fi alert`,`battery voltage alert`. 
