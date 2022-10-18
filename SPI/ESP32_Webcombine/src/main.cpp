@@ -30,6 +30,8 @@ const char* password = "ys771u9o";
 #define ESP32_CAM_MOSI 13  //to Mega pin 51
 #define ESP32_CAM_SS 2     //to Mega pin 53
 
+#define LED_PIN 27
+
 httpd_handle_t camera_httpd = NULL;
 
 static const char PROGMEM INDEX_HTML[] = R"rawliteral(
@@ -135,7 +137,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         cursor: pointer;
         float: left;
         transition-duration: 0.4s;
-        width: 50%;
+        width: 33.33%;
         margin: 10px 0 0 0;
         font-family:Microsoft JhengHei;
       }
@@ -178,7 +180,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
                 
       .progress {
         position: absolute;
-        top: 820px;
+        top: 830px;
         width: 0%;
         height: 10px;
         background-color: #2183DD;
@@ -322,7 +324,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     <iframe
       noresize="noresize"
       style="position: middle; background: transparent; width: 100%; height:320px;"
-      src="http://192.168.43.237/">
+      src="">
     </iframe>
     <div class="btn-group1">
       <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
@@ -350,8 +352,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
     <div class="btn-group4">
-    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
-    <button class="buttonStb" style="vertical-align:middle" ondblclick="toggleCheckbox('reset');"><span>重置陀螺儀(雙擊)</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:16.5px;" onclick="toggleCheckbox('light');"><span>燈光</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:16.5px;" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:6px;" ondblclick="toggleCheckbox('reset');"><span>重置陀螺儀(雙擊)</span></button>
     </div>
     <p><br></p>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -570,6 +573,7 @@ static esp_err_t index_handler(httpd_req_t *req){
 }
 
 byte m_send;   //中斷要改變的值設為 volatile
+int LEDstatus = LOW;
 
 static esp_err_t cmd_handler(httpd_req_t *req){
   char*  buf;
@@ -654,6 +658,11 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   else if(!strcmp(variable, "reset")) {
     Serial.println("x");
     m_send = 'x';
+  }
+  else if(!strcmp(variable, "light")) {
+    Serial.println("light");
+    LEDstatus = !LEDstatus;
+    digitalWrite(LED_PIN, LEDstatus);
   }
   else {
     res = -1;
@@ -754,6 +763,9 @@ void setup () {
   
   Serial.setDebugOutput(false);
   Wire.begin(I2C_SDA, I2C_SCL);
+  
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
   
   // Wi-Fi connection
   WiFi.setSleep(false);
