@@ -168,8 +168,10 @@ int stepperhandnum = 1;    //(最鬆)1----5(最緊)  初始為最鬆!!!!!!!
 int stepperUpDownnum = 5;  //(最高)5----1(最低)  初始為最高!!!!!!!
 int speedlimit = 0;
 byte speedstatus = 5;  // 5 = stop
-float FBpreviousangle = 7.00;
-float RLpreviousangle = 7.00;
+const float smallangle = 3.00;
+const float bigangle = 5.00;
+float FBpreviousangle = bigangle;
+float RLpreviousangle = bigangle;
 long TimeoutCount = 0;
 long VoltageCount = 0;
 
@@ -461,14 +463,14 @@ void loop () {
       break;
   }
 
-  TimeoutCount++;
-  if(TimeoutCount > 500)  // 20 second
-  {
-    speed3++;
-    speed4--;
-    speed5--;
-    speed6++;
-  }
+  // TimeoutCount++;
+  // if(TimeoutCount > 5000)  // 20 second
+  // {
+  //   speed3++;
+  //   speed4--;
+  //   speed5--;
+  //   speed6++;
+  // }
 
   VoltageCount++;
   if(VoltageCount > 1000)     //注意：AO的線要在GND線旁的電阻!!!
@@ -540,7 +542,7 @@ void loop () {
       // Serial.println(ypr[2] * 180/M_PI);
       if(stableStart)
       {
-        if(abs(ypr[1]*180/M_PI) >= 7)
+        if(abs(ypr[1]*180/M_PI) >= bigangle)
         {
           if(abs(ypr[1]*180/M_PI) >= FBpreviousangle && (ypr[1]*180/M_PI) < 0)   //向前傾斜
           {
@@ -560,10 +562,10 @@ void loop () {
         }
         else
         {
-          FBpreviousangle = 7.00;
+          FBpreviousangle = bigangle;
         }
         
-        if(abs(ypr[2]*180/M_PI) >= 7)
+        if(abs(ypr[2]*180/M_PI) >= bigangle)
         {
           if(abs(ypr[2]*180/M_PI) >= RLpreviousangle && (ypr[2]*180/M_PI) < 0)   //向左傾斜
           {
@@ -583,10 +585,10 @@ void loop () {
         }
         else
         {
-          RLpreviousangle = 7.00;
+          RLpreviousangle = bigangle;
         }
 
-        if(abs(ypr[1]*180/M_PI) < 7 && abs(ypr[2]*180/M_PI) < 7)
+        if(abs(ypr[1]*180/M_PI) < smallangle && abs(ypr[2]*180/M_PI) < smallangle)
         {
           if(speed3 > 1475) speed3--;
           if(speed3 < 1475) speed3++;
