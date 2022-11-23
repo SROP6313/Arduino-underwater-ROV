@@ -324,7 +324,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     <iframe
       noresize="noresize"
       style="position: middle; background: transparent; width: 100%; height:320px;"
-      src="">
+      src="http://192.168.43.237/">
     </iframe>
     <div class="btn-group1">
       <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
@@ -574,6 +574,8 @@ static esp_err_t index_handler(httpd_req_t *req){
 
 byte m_send;   //中斷要改變的值設為 volatile
 int LEDstatus = LOW;
+bool stablestart = false;
+bool pressrecord = false;
 
 static esp_err_t cmd_handler(httpd_req_t *req){
   char*  buf;
@@ -610,50 +612,63 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   if(!strcmp(variable, "forward")) {
     Serial.println("f");
     m_send = 'f';
+    stablestart = false;
   }
   else if(!strcmp(variable, "left")) {
     Serial.println("l");
     m_send = 'l';
+    stablestart = false;
   }
   else if(!strcmp(variable, "right")) {
     Serial.println("r");
     m_send = 'r';
+    stablestart = false;
   }
   else if(!strcmp(variable, "backward")) {
     Serial.println("b");
     m_send = 'b';
+    stablestart = false;
   }
   else if(!strcmp(variable, "stop")) {
     Serial.println("t");
     m_send = 't';
+    stablestart = false;
   }
   else if(!strcmp(variable, "stable")) {
     Serial.println("s");
     m_send = 's';
+    stablestart = true;
+    pressrecord = true;
   }
   else if(!strcmp(variable, "hold")) {
     Serial.println("h");
     m_send = 'h';
+    stablestart = false;
   }
   else if(!strcmp(variable, "release")) {
     Serial.println("m");
     m_send = 'm';
+    stablestart = false;
   }
   else if(!strcmp(variable, "armup")) {
     Serial.println("a");
     m_send = 'a';
+    stablestart = false;
   }
   else if(!strcmp(variable, "armdown")) {
     Serial.println("q");
     m_send = 'q';
+    stablestart = false;
   }
   else if(!strcmp(variable, "dive")) {
     Serial.println("d");
     m_send = 'd';
+    stablestart = false;
   }
   else if(!strcmp(variable, "rise")) {
     Serial.println("e");
     m_send = 'e';
+    stablestart = false;
   }
   else if(!strcmp(variable, "reset")) {
     Serial.println("x");
@@ -738,21 +753,6 @@ void handleBatterystatus(){
 
 MS5837 sensor;
 
-bool checkStringIsNumerical(String myString)  //檢查是數字還是字母
-{
-  uint16_t Numbers = 0;
-
-  for(uint16_t i = 0; i < myString.length(); i++)
-  {
-    if (myString[i] == '0' || myString[i] == '1' || myString[i] == '2' || myString[i] == '3' || myString[i] == '4' || myString[i] == '5' || myString[i] == '6' || myString[i] == '7' || myString[i] == '8' || myString[i] == '9')
-    {
-      Numbers ++;
-    }
-  }
-  if(Numbers == myString.length()) return true;
-  else return false;
-}
-
 void setup () {
   Serial.begin(115200); //set baud rate to 115200 for usart
   digitalWrite(SS, HIGH); // disable Slave Select
@@ -770,6 +770,7 @@ void setup () {
   // Wi-Fi connection
   WiFi.setSleep(false);
   WiFi.mode (WIFI_STA);
+  WiFi.setAutoReconnect(true);
 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -802,11 +803,11 @@ float tempera, pressu;
 int sensernum = 0;
 int SPIsendnum = 0;
 long warnnum = 0;
+float originalpressure;
 
 void loop () {
   server.handleClient();
-  // Serial.print("WiFi RSSI:");
-  // Serial.println(WiFi.RSSI()); //讀取WiFi強度
+
   warnnum++;
   if(warnnum >= 1000)
   {
@@ -821,22 +822,6 @@ void loop () {
     }
   }
 
-  sensernum++;
-  if(sensernum >= 250)
-  {
-    sensernum = 0;
-    sensor.read();   //函式裡有 delay 40 ms
-    // Serial.print("Temperature: "); 
-    // Serial.print(sensor.temperature()); 
-    // Serial.println(" deg C");
-    tempera = sensor.temperature();
-    pressu = sensor.pressure();
-    //Serial.println(tempera);
-    temperature = String(tempera,2);
-    pressure = String(pressu,2);
-    //Serial.println(WiFi.RSSI());
-  }
-
   SPIsendnum++;
   if(SPIsendnum >= 100)
   {
@@ -849,7 +834,6 @@ void loop () {
     {
       w = 3;
       batteryvalue = 20;
-      Serial.println("20%");
     }
     else if(m_receive == 'o') batteryvalue = 40;
     else if(m_receive == 'i') batteryvalue = 60;
@@ -857,10 +841,41 @@ void loop () {
     else if(m_receive == 'y') 
     {
       batteryvalue = 100;
-      Serial.println("100%");
     }
        
     m_send = 0;
     Serial.println(m_receive);
+  }
+
+  sensernum++;
+  if(sensernum >= 250)
+  {
+    sensernum = 0;
+    sensor.read();   //函式裡有 delay 40 ms
+    // Serial.print("Temperature: "); 
+    // Serial.print(sensor.temperature()); 
+    // Serial.println(" deg C");
+    tempera = sensor.temperature();
+    pressu = sensor.pressure();
+    Serial.println(pressu);
+    if(stablestart)
+    {
+      if(pressrecord) 
+      {
+        originalpressure = pressu;
+        pressrecord = false;
+      }
+      if(pressu >= (originalpressure+8.00))
+      {
+        m_send = 'g';
+      }
+      if(pressu <= (originalpressure-8.00))
+      {
+        m_send = 'p';
+      }
+    }
+    temperature = String(tempera,2);
+    pressure = String(pressu,2);
+    //Serial.println(WiFi.RSSI());
   }
 }
