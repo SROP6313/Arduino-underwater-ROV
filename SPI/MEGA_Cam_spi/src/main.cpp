@@ -174,6 +174,7 @@ float FBpreviousangle = bigangle;
 float RLpreviousangle = bigangle;
 long TimeoutCount = 0;
 long VoltageCount = 0;
+bool speedzerostable = true;
 
 void loop () {
   if (process && actioncomplete) {
@@ -309,19 +310,37 @@ void loop () {
     {
       Serial.print("收到d命令");
       control = 6;
-      stableStart = false;
       actioncomplete = false;
       speednum = 0;
       TimeoutCount = 0;
+      speedzerostable = false;
     }
     else if (s_received == 'e')  // rise
     {
       Serial.println("收到e命令");
       control = 7;
-      stableStart = false;
       actioncomplete = false;
       speednum = 0;
       TimeoutCount = 0;
+      speedzerostable = false;
+    }
+    else if (s_received == 'p')  // dive a little
+    {
+      Serial.println("收到p命令");
+      control = 8;
+      actioncomplete = false;
+      speednum = 0;
+      TimeoutCount = 0;
+      speedzerostable = false;
+    }
+    else if (s_received == 'g')  // rise a little
+    {
+      Serial.println("收到g命令");
+      control = 9;
+      actioncomplete = false;
+      speednum = 0;
+      TimeoutCount = 0;
+      speedzerostable = false;
     }
     else if (s_received == 'x')  // reset Mega board
     {
@@ -346,7 +365,7 @@ void loop () {
     case 1:      //前進
       speednum++;
       speed1++;
-      speed2--;
+      if(speednum <= 97) speed2--;      
       if(speednum >= 100) 
       {
         speednum = 0;
@@ -399,7 +418,7 @@ void loop () {
     case 4:      //後退
       speednum++;
       speed1--;
-      speed2++;
+      if(speednum <= 97) speed2++; 
       if(speednum >= 100) 
       {
         speednum = 0;
@@ -416,14 +435,14 @@ void loop () {
       if(speed1 < 1475) speed1++;
       if(speed2 > 1475) speed2--;
       if(speed2 < 1475) speed2++;
-      if(speed3 > 1475) speed3--;
-      if(speed3 < 1475) speed3++;
-      if(speed4 > 1475) speed4--;
-      if(speed4 < 1475) speed4++;
-      if(speed5 > 1475) speed5--;
-      if(speed5 < 1475) speed5++;
-      if(speed6 > 1475) speed6--;
-      if(speed6 < 1475) speed6++;
+      if(speed3 > 1450) speed3--;
+      if(speed3 < 1450) speed3++;
+      if(speed4 > 1500) speed4--;
+      if(speed4 < 1500) speed4++;
+      if(speed5 > 1500) speed5--;
+      if(speed5 < 1500) speed5++;
+      if(speed6 > 1450) speed6--;
+      if(speed6 < 1450) speed6++;
 
       if(speed1==1475 && speed2==1475 && speed3==1475 && speed4==1475 && speed5==1475 && speed6==1475) 
       {          
@@ -455,6 +474,34 @@ void loop () {
       speed5--;
       speed6++;
       if(speednum >= 50) 
+      {
+        speednum = 0;
+        control = 0;
+        actioncomplete = true;
+      }
+      break;
+
+    case 8:      //下潛一點點
+      speednum++;
+      speed3--;
+      speed4++;
+      speed5++;
+      speed6--;
+      if(speednum >= 5)
+      {
+        speednum = 0;
+        control = 0;
+        actioncomplete = true;
+      }  
+      break;
+
+    case 9:      //上升一點點
+     speednum++;
+      speed3++;
+      speed4--;
+      speed5--;
+      speed6++;
+      if(speednum >= 5)
       {
         speednum = 0;
         control = 0;
@@ -544,6 +591,7 @@ void loop () {
       {
         if(abs(ypr[1]*180/M_PI) >= bigangle)
         {
+          speedzerostable = true;
           if(abs(ypr[1]*180/M_PI) >= FBpreviousangle && (ypr[1]*180/M_PI) < 0)   //向前傾斜
           {
             if(speed3>1275) speed3--;
@@ -567,6 +615,7 @@ void loop () {
         
         if(abs(ypr[2]*180/M_PI) >= bigangle)
         {
+          speedzerostable = true;
           if(abs(ypr[2]*180/M_PI) >= RLpreviousangle && (ypr[2]*180/M_PI) < 0)   //向左傾斜
           {
             if(speed3>1275) speed3--;
@@ -588,16 +637,16 @@ void loop () {
           RLpreviousangle = bigangle;
         }
 
-        if(abs(ypr[1]*180/M_PI) < smallangle && abs(ypr[2]*180/M_PI) < smallangle)
+        if(abs(ypr[1]*180/M_PI) < smallangle && abs(ypr[2]*180/M_PI) < smallangle && speedzerostable)
         {
-          if(speed3 > 1475) speed3--;
-          if(speed3 < 1475) speed3++;
-          if(speed4 > 1475) speed4--;
-          if(speed4 < 1475) speed4++;
-          if(speed5 > 1475) speed5--;
-          if(speed5 < 1475) speed5++;
-          if(speed6 > 1475) speed6--;
-          if(speed6 < 1475) speed6++;
+          if(speed3 > 1450) speed3--;
+          if(speed3 < 1450) speed3++;
+          if(speed4 > 1500) speed4--;
+          if(speed4 < 1500) speed4++;
+          if(speed5 > 1500) speed5--;
+          if(speed5 < 1500) speed5++;
+          if(speed6 > 1450) speed6--;
+          if(speed6 < 1450) speed6++;
         }
 
         // Serial.print(speed1);
