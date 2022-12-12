@@ -13,7 +13,21 @@
         max-width: 100% ;
         height: 320px ;  
       }
-     .btn-group1 .buttonFrwBkw {
+      .btn-group1 .buttonpreres {
+        background-color: hsl(197, 53%, 42%);
+        border: 1px solid white;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        width: 100%;
+        font-family:Microsoft JhengHei;
+      }   
+      .btn-group1 .buttonFrwBkw {
         background-color: #669999;
         border: 1px solid white;
         color: white;
@@ -100,7 +114,7 @@
         cursor: pointer;
         float: left;
         transition-duration: 0.4s;
-        width: 50%;
+        width: 33.33%;
         margin: 10px 0 0 0;
         font-family:Microsoft JhengHei;
       }
@@ -115,6 +129,7 @@
         color: #FFF;
         box-shadow: 0px 2px 18px -4px rgba(0,0,0,0.75);
         font-family:Microsoft JhengHei;
+        line-height:2px
       }
       ul {
         list-style-type: none;
@@ -143,7 +158,7 @@
                 
       .progress {
         position: absolute;
-        top: 820px;
+        top: 830px;
         width: 0%;
         height: 10px;
         background-color: #2183DD;
@@ -274,19 +289,33 @@
       .btn:nth-child(2) {
         margin: 0 10px;
       }
+      .stk {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        position: -webkit-sticky; 
+        position: sticky;
+        top: 0;
+      }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
+    <i id="battery" class='fa fa-battery-0' style="font-size:50px; position:absolute; top:27px; right:12px;"></i>
     <ul>
       <li><a href="#photo">水下影像</a></li>
       <li><a href="#control">控制</a></li>
       <li><a href="#feedback">數值</a></li>
     </ul>
-    <p id="photo"></p>
-    <iframe
-      noresize="noresize"
-      style="position: middle; background: transparent; width: 100%; height:320px;"
-      src="http://192.168.43.22/">
-    </iframe>
+    <div class="stk">
+      <p id="photo"></p>
+      <iframe
+        noresize="noresize"
+        style="position: middle; background: transparent; width: 100%; height:320px;"
+        src="http://192.168.43.237/">
+      </iframe>
+    </div>
+    
     <div class="btn-group1">
       <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
     </div>
@@ -313,8 +342,9 @@
       <button class="buttonHdAm" onclick="toggleCheckbox('armdown');">手臂下降</button>
     </div>
     <div class="btn-group4">
-    <button class="buttonStb" style="vertical-align:middle" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
-    <button class="buttonStb" style="vertical-align:middle" ondblclick="toggleCheckbox('reset');"><span>重置陀螺儀(雙擊)</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:16.5px;" onclick="toggleCheckbox('light');"><span>燈光</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:16.5px;" onclick="toggleCheckbox('stable');"><span>穩定機身</span></button>
+    <button class="buttonStb" style="vertical-align:middle; padding:6px;" ondblclick="toggleCheckbox('reset');"><span>重置陀螺儀(雙擊)</span></button>
     </div>
     <p><br></p>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
@@ -354,7 +384,12 @@
       <h2 id="feedback">感測器數值</h2><br>
       <h4>Temperature : <span id="temperValue"></span> (degree C) </h4><br>
       <h4>Pressure : <span id="pressureValue"></span> (mbar) </h4><br>
+      <h4>depth : <span id="depthValue"></span> (cm) </h4><br>
     </div>
+    <div class="btn-group1">
+      <button class="buttonpreres" onclick="depthzero();">深度歸零</button>
+    </div>
+
   <script>
     function toggleCheckbox(x) {
       var xhr = new XMLHttpRequest();
@@ -374,6 +409,9 @@
       getSpeedstatus();
       sampleClick();
     },500);
+    setInterval(function(){
+      getBatstatus();
+    },9250);
    
     function sampleClick() {
       var btnX = document.getElementById("NS");
@@ -381,6 +419,9 @@
     }
    
     var warn;
+    var PressuValue;
+    var oringinalpressure;
+
     function getTemper() {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
@@ -395,11 +436,17 @@
       var phttp = new XMLHttpRequest();
       phttp.onreadystatechange = function() {
         if (phttp.readyState == 4 && phttp.status == 200) {
-          document.getElementById("pressureValue").innerHTML = phttp.responseText;
+          window.PressuValue = phttp.responseText;
+          document.getElementById("pressureValue").innerHTML = PressuValue;
+          var depthcm = (parseFloat(PressuValue) - oringinalpressure).toFixed(2);
+          document.getElementById("depthValue").innerHTML = depthcm.toString();
         }
       };
       phttp.open("GET", "readPressure", true);
       phttp.send();
+    }
+    function depthzero(){
+      oringinalpressure = parseFloat(PressuValue);
     }
     
     function getWarn() {
@@ -483,6 +530,41 @@
       };
       statushttp.open("GET", "readStatus", true);
       statushttp.send();
+    }
+    function getBatstatus() {
+      var batstatushttp = new XMLHttpRequest();
+      batstatushttp.onreadystatechange = function() {
+        if (batstatushttp.readyState == 4 && batstatushttp.status == 200){
+          var batteryvalue = parseInt(batstatushttp.responseText);
+          if(batteryvalue == 100)
+          {
+            document.getElementById("battery").className = "fa fa-battery-4";
+            document.getElementById("battery").style.color = "blue";
+          }  
+          else if(batteryvalue == 80) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-3";
+            document.getElementById("battery").style.color = "blue";
+          }
+          else if(batteryvalue == 60) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-2";
+            document.getElementById("battery").style.color = "blue";
+          }
+          else if(batteryvalue == 40) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-1";
+            document.getElementById("battery").style.color = "red";
+          }
+          else if(batteryvalue == 20) 
+          {
+            document.getElementById("battery").className = "fa fa-battery-0";
+            document.getElementById("battery").style.color = "red";
+          }  
+        }
+      };
+      batstatushttp.open("GET", "readBatStatus", true);
+      batstatushttp.send();
     }
     </script>
   </body> 
