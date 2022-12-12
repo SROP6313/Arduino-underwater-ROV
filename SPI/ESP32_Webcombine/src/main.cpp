@@ -50,7 +50,21 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         max-width: 100% ;
         height: 320px ;  
       }
-     .btn-group1 .buttonFrwBkw {
+      .btn-group1 .buttonpreres {
+        background-color: hsl(197, 53%, 42%);
+        border: 1px solid white;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        float: left;
+        width: 100%;
+        font-family:Microsoft JhengHei;
+      }   
+      .btn-group1 .buttonFrwBkw {
         background-color: #669999;
         border: 1px solid white;
         color: white;
@@ -152,6 +166,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         color: #FFF;
         box-shadow: 0px 2px 18px -4px rgba(0,0,0,0.75);
         font-family:Microsoft JhengHei;
+        line-height:2px
       }
       ul {
         list-style-type: none;
@@ -311,6 +326,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       .btn:nth-child(2) {
         margin: 0 10px;
       }
+      .stk {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        position: -webkit-sticky; 
+        position: sticky;
+        top: 0;
+      }
     </style>
     <h1 style="color:steelblue; font-family:Microsoft JhengHei">水下觀察機</h1>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>
@@ -320,12 +344,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <li><a href="#control">控制</a></li>
       <li><a href="#feedback">數值</a></li>
     </ul>
-    <p id="photo"></p>
-    <iframe
-      noresize="noresize"
-      style="position: middle; background: transparent; width: 100%; height:320px;"
-      src="http://192.168.43.237/">
-    </iframe>
+    <div class="stk">
+      <p id="photo"></p>
+      <iframe
+        noresize="noresize"
+        style="position: middle; background: transparent; width: 100%; height:320px;"
+        src="http://192.168.43.237/">
+      </iframe>
+    </div>
+    
     <div class="btn-group1">
       <button id="control" class="buttonFrwBkw" onclick="toggleCheckbox('forward');">加速</button>
     </div>
@@ -394,7 +421,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <h2 id="feedback">感測器數值</h2><br>
       <h4>Temperature : <span id="temperValue"></span> (degree C) </h4><br>
       <h4>Pressure : <span id="pressureValue"></span> (mbar) </h4><br>
+      <h4>depth : <span id="depthValue"></span> (cm) </h4><br>
     </div>
+    <div class="btn-group1">
+      <button class="buttonpreres" onclick="depthzero();">深度歸零</button>
+    </div>
+
   <script>
     function toggleCheckbox(x) {
       var xhr = new XMLHttpRequest();
@@ -424,6 +456,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
    
     var warn;
+    var PressuValue;
+    var oringinalpressure;
+
     function getTemper() {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
@@ -438,11 +473,17 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       var phttp = new XMLHttpRequest();
       phttp.onreadystatechange = function() {
         if (phttp.readyState == 4 && phttp.status == 200) {
-          document.getElementById("pressureValue").innerHTML = phttp.responseText;
+          window.PressuValue = phttp.responseText;
+          document.getElementById("pressureValue").innerHTML = PressuValue;
+          var depthcm = (parseFloat(PressuValue) - oringinalpressure).toFixed(2);
+          document.getElementById("depthValue").innerHTML = depthcm.toString();
         }
       };
       phttp.open("GET", "readPressure", true);
       phttp.send();
+    }
+    function depthzero(){
+      oringinalpressure = parseFloat(PressuValue);
     }
     
     function getWarn() {
@@ -803,7 +844,16 @@ float tempera, pressu;
 int sensernum = 0;
 int SPIsendnum = 0;
 long warnnum = 0;
-float originalpressure;
+int originalpressure;
+int previouspressure;
+int Dpressure;
+int Bpressure;
+int Apressure;
+int Epressure;
+int DepthStableCount = 0;
+char flag = 'C';
+int dampcount = 0;
+//int timecount = 0;
 
 void loop () {
   server.handleClient();
@@ -848,31 +898,108 @@ void loop () {
   }
 
   sensernum++;
-  if(sensernum >= 250)
+  if(sensernum >= 250)  //約200ms讀取一次溫度
   {
     sensernum = 0;
     sensor.read();   //函式裡有 delay 40 ms
     // Serial.print("Temperature: "); 
     // Serial.print(sensor.temperature()); 
     // Serial.println(" deg C");
+    // timecount++;
+    //Serial.println(timecount);
     tempera = sensor.temperature();
     pressu = sensor.pressure();
     Serial.println(pressu);
     if(stablestart)
     {
-      if(pressrecord) 
+      if(pressrecord)
       {
         originalpressure = pressu;
+        previouspressure = pressu;
+        Dpressure = originalpressure + 3;
+        Bpressure = originalpressure - 3;
+        Apressure = originalpressure - 5;
+        Epressure = originalpressure + 5;
         pressrecord = false;
       }
-      if(pressu >= (originalpressure+8.00))
+
+      DepthStableCount++;
+      if(DepthStableCount >= 2)  //約400ms 作動一次
       {
-        m_send = 'g';
+        DepthStableCount = 0;
+        if(pressu <= Bpressure)   //B上方
+        {
+          dampcount = 0;
+          if(flag == 'C' || flag == 'D') flag = 'B';       
+          if(pressu <= Apressure && pressu <= previouspressure)
+          {
+            flag = 'A';
+            m_send = 'p';   //dive 4
+          }
+          else   // between A & B
+          {
+            if(flag == 'B' && pressu <= previouspressure)
+            {
+              m_send = 'g';   //dive 1
+            }
+            else if(flag == 'A' && pressu > previouspressure)
+            {
+              m_send = 'k';   //rise 1
+            }
+          }
+        }
+        else if(pressu >= Dpressure)  //D下方
+        {
+          dampcount = 0;
+          if(flag == 'C' || flag == 'B') flag = 'D';       
+          if(pressu >= Epressure && pressu >= previouspressure)
+          {
+            flag = 'E';
+            m_send = 'j';   //rise 2
+          }
+          else   // between D & E
+          {
+            if(flag == 'D' && pressu >= previouspressure)
+            {
+              m_send = 'k';   //rise 1
+            }
+            else if(flag == 'E' && pressu < previouspressure)
+            {
+              m_send = 'g';   //dive 1
+            }
+          }
+        }
+        else  //between B & D
+        {
+          if(flag == 'A' || flag == 'B')
+          {
+            flag = 'B';
+            dampcount++;
+            if(dampcount <= 5)
+            {
+              m_send = 'k';   //rise 1
+            }       
+            else if(dampcount <= 10)
+            {
+              m_send = 'g';   //dive 1
+            }
+          }
+          else if(flag == 'D' || flag == 'E')
+          {
+            flag = 'D';
+            dampcount++;
+            if(dampcount <= 5)
+            {             
+              m_send = 'g';   //dive 1
+            }       
+            else if(dampcount <= 10)
+            {
+              m_send = 'k';   //rise 1
+            }
+          }
+        }
       }
-      if(pressu <= (originalpressure-8.00))
-      {
-        m_send = 'p';
-      }
+      previouspressure = pressu;
     }
     temperature = String(tempera,2);
     pressure = String(pressu,2);
