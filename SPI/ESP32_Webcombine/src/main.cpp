@@ -924,7 +924,7 @@ void loop () {
       }
 
       DepthStableCount++;
-      if(DepthStableCount >= 2)  //約400ms 作動一次
+      if(DepthStableCount >= 1)  //約400ms 作動一次
       {
         DepthStableCount = 0;
         if(pressu <= Bpressure)   //B上方
@@ -934,17 +934,17 @@ void loop () {
           if(pressu <= Apressure && pressu <= previouspressure)
           {
             flag = 'A';
-            m_send = 'p';   //dive 4
+            m_send = 'p';   //dive 8
           }
           else   // between A & B
           {
             if(flag == 'B' && pressu <= previouspressure)
             {
-              m_send = 'g';   //dive 1
+              m_send = 'g';   //dive 2
             }
             else if(flag == 'A' && pressu > previouspressure)
             {
-              m_send = 'k';   //rise 1
+              m_send = 'k';   //rise 2
             }
           }
         }
@@ -955,17 +955,17 @@ void loop () {
           if(pressu >= Epressure && pressu >= previouspressure)
           {
             flag = 'E';
-            m_send = 'j';   //rise 2
+            m_send = 'j';   //rise 4
           }
           else   // between D & E
           {
             if(flag == 'D' && pressu >= previouspressure)
             {
-              m_send = 'k';   //rise 1
+              m_send = 'k';   //rise 2
             }
             else if(flag == 'E' && pressu < previouspressure)
             {
-              m_send = 'g';   //dive 1
+              m_send = 'g';   //dive 2
             }
           }
         }
@@ -977,11 +977,11 @@ void loop () {
             dampcount++;
             if(dampcount <= 5)
             {
-              m_send = 'k';   //rise 1
+              m_send = 'k';   //rise 2
             }       
             else if(dampcount <= 10)
             {
-              m_send = 'g';   //dive 1
+              m_send = 'g';   //dive 2
             }
           }
           else if(flag == 'D' || flag == 'E')
@@ -990,11 +990,11 @@ void loop () {
             dampcount++;
             if(dampcount <= 5)
             {             
-              m_send = 'g';   //dive 1
+              m_send = 'g';   //dive 2
             }       
             else if(dampcount <= 10)
             {
-              m_send = 'k';   //rise 1
+              m_send = 'k';   //rise 2
             }
           }
         }
