@@ -320,7 +320,7 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       speednum = 0;
       TimeoutCount = 0;
     }
-    else if (s_received == 'p')  // dive 4
+    else if (s_received == 'p')  // dive 8
     {
       Serial.println("收到p命令");
       control = 8;
@@ -328,7 +328,7 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       speednum = 0;
       TimeoutCount = 0;
     }
-    else if (s_received == 'g')  // dive 1
+    else if (s_received == 'g')  // dive 2
     {
       Serial.println("收到g命令");
       control = 9;
@@ -336,7 +336,7 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       speednum = 0;
       TimeoutCount = 0;
     }
-    else if (s_received == 'j')  // rise 2
+    else if (s_received == 'j')  // rise 4
     {
       Serial.println("收到j命令");
       control = 10;
@@ -344,7 +344,7 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       speednum = 0;
       TimeoutCount = 0;
     }
-    else if (s_received == 'k')  // rise 1
+    else if (s_received == 'k')  // rise 2
     {
       Serial.println("收到k命令");
       control = 11;
@@ -491,13 +491,13 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       }
       break;
 
-    case 8:      //dive 4
+    case 8:      //dive 8
       speednum++;
       speed3--;
       speed4++;
       speed5++;
       speed6--;
-      if(speednum >= 4)
+      if(speednum >= 8)
       {
         speednum = 0;
         control = 0;
@@ -505,26 +505,12 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       }
       break;
 
-    case 9:      //dive 1
+    case 9:      //dive 2
       speednum++;
       speed3--;
       speed4++;
       speed5++;
       speed6--;
-      if(speednum >= 1)
-      {
-        speednum = 0;
-        control = 0;
-        actioncomplete = true;
-      }
-      break;
-      
-    case 10:      //rise 2
-      speednum++;
-      speed3++;
-      speed4--;
-      speed5--;
-      speed6++;
       if(speednum >= 2)
       {
         speednum = 0;
@@ -533,13 +519,27 @@ void loop () {   //一次迴圈(包含自穩)約 15ms
       }
       break;
       
-    case 11:      //rise 1
+    case 10:      //rise 4
       speednum++;
       speed3++;
       speed4--;
       speed5--;
       speed6++;
-      if(speednum >= 1)
+      if(speednum >= 4)
+      {
+        speednum = 0;
+        control = 0;
+        actioncomplete = true;
+      }
+      break;
+      
+    case 11:      //rise 2
+      speednum++;
+      speed3++;
+      speed4--;
+      speed5--;
+      speed6++;
+      if(speednum >= 2)
       {
         speednum = 0;
         control = 0;
